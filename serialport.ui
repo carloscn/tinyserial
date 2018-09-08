@@ -1,0 +1,513 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ui version="4.0">
+ <class>SerialPort</class>
+ <widget class="QMainWindow" name="SerialPort">
+  <property name="geometry">
+   <rect>
+    <x>0</x>
+    <y>0</y>
+    <width>1082</width>
+    <height>650</height>
+   </rect>
+  </property>
+  <property name="windowTitle">
+   <string>SerialPort</string>
+  </property>
+  <widget class="QWidget" name="centralWidget">
+   <layout class="QHBoxLayout" name="horizontalLayout_4">
+    <item>
+     <layout class="QVBoxLayout" name="verticalLayout_6">
+      <item>
+       <widget class="QGroupBox" name="groupBox">
+        <property name="title">
+         <string>Serial Port Configration:</string>
+        </property>
+        <layout class="QVBoxLayout" name="verticalLayout_5">
+         <item>
+          <layout class="QFormLayout" name="formLayout">
+           <item row="0" column="0">
+            <widget class="QLabel" name="label">
+             <property name="text">
+              <string>Serial Port:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="0" column="1">
+            <widget class="QComboBox" name="comboBox_serialPort">
+             <item>
+              <property name="text">
+               <string>None</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="1" column="0">
+            <widget class="QLabel" name="label_2">
+             <property name="text">
+              <string>Baud Rate:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="1" column="1">
+            <widget class="QComboBox" name="comboBox_baudrate">
+             <item>
+              <property name="text">
+               <string>1200</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>2400</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>4800</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>9600</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>19200</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>38400</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>57600</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>115200</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="2" column="0">
+            <widget class="QLabel" name="DataBits">
+             <property name="text">
+              <string>Data Bits:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="2" column="1">
+            <widget class="QComboBox" name="comboBox_databits">
+             <item>
+              <property name="text">
+               <string>5 Bits</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>6 Bits</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>7 Bits</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>8 Bits</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="3" column="0">
+            <widget class="QLabel" name="label_3">
+             <property name="text">
+              <string>Stop Bits:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="3" column="1">
+            <widget class="QComboBox" name="comboBox_stopbits">
+             <item>
+              <property name="text">
+               <string>1</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>1.5</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>2</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="4" column="0">
+            <widget class="QLabel" name="label_4">
+             <property name="text">
+              <string>Partity:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="4" column="1">
+            <widget class="QComboBox" name="comboBox_checkdigit">
+             <item>
+              <property name="text">
+               <string>None</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Even</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Odd</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Space</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Mark</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+           <item row="5" column="0">
+            <widget class="QLabel" name="label_5">
+             <property name="text">
+              <string>Flow Ctrl:</string>
+             </property>
+            </widget>
+           </item>
+           <item row="5" column="1">
+            <widget class="QComboBox" name="comboBox_flowctrl">
+             <item>
+              <property name="text">
+               <string>Disable</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Hardware</string>
+              </property>
+             </item>
+             <item>
+              <property name="text">
+               <string>Software</string>
+              </property>
+             </item>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_6">
+           <item>
+            <widget class="QPushButton" name="pushButton_scan">
+             <property name="text">
+              <string>scan</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButton_pause">
+             <property name="text">
+              <string>pause</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+         <item>
+          <layout class="QHBoxLayout" name="horizontalLayout_7">
+           <item>
+            <widget class="QPushButton" name="pushButton_open">
+             <property name="text">
+              <string>open</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QPushButton" name="pushButton_close">
+             <property name="text">
+              <string>close</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_2">
+        <property name="title">
+         <string>Recived Configration:</string>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_13">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_2">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout">
+             <item>
+              <widget class="QRadioButton" name="radioButton_rec_ascii">
+               <property name="text">
+                <string>ASCII</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="radioButton_rec_hex">
+               <property name="text">
+                <string>Hex</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="checkBox_wordwrap">
+             <property name="text">
+              <string>Word wrap</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="checkBox_dispsend">
+             <property name="text">
+              <string>Display Send</string>
+             </property>
+            </widget>
+           </item>
+           <item>
+            <widget class="QCheckBox" name="checkBox_disptime">
+             <property name="text">
+              <string>Display Time</string>
+             </property>
+            </widget>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+      <item>
+       <widget class="QGroupBox" name="groupBox_3">
+        <property name="title">
+         <string>Send Configration:</string>
+        </property>
+        <layout class="QHBoxLayout" name="horizontalLayout_12">
+         <item>
+          <layout class="QVBoxLayout" name="verticalLayout_4">
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <item>
+              <widget class="QRadioButton" name="radioButton_send_ascii">
+               <property name="text">
+                <string>ASCII</string>
+               </property>
+               <property name="checked">
+                <bool>true</bool>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QRadioButton" name="radioButton_send_hex">
+               <property name="text">
+                <string>Hex</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_2">
+             <item>
+              <widget class="QCheckBox" name="checkBox_repeat">
+               <property name="text">
+                <string>Repeat Send</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QSpinBox" name="spinBox_repeat">
+               <property name="maximum">
+                <number>999999</number>
+               </property>
+               <property name="value">
+                <number>1000</number>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QLabel" name="label_6">
+               <property name="text">
+                <string>ms</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+          </layout>
+         </item>
+        </layout>
+       </widget>
+      </item>
+     </layout>
+    </item>
+    <item>
+     <widget class="QTabWidget" name="tabWidget">
+      <property name="currentIndex">
+       <number>1</number>
+      </property>
+      <widget class="QWidget" name="tab">
+       <attribute name="title">
+        <string>Word Trans</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout_3">
+        <item>
+         <layout class="QVBoxLayout" name="verticalLayout_8">
+          <item>
+           <widget class="QTextBrowser" name="textBrowser_rec">
+            <property name="styleSheet">
+             <string notr="true">font: 12pt &quot;Ubuntu Mono&quot;;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTextEdit" name="textEdit_send">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>120</height>
+             </size>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
+            <item>
+             <widget class="QPushButton" name="pushButton_send">
+              <property name="text">
+               <string>send</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_clear">
+              <property name="text">
+               <string>clear</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+       </layout>
+      </widget>
+      <widget class="QWidget" name="draw">
+       <attribute name="title">
+        <string>Draw Trans</string>
+       </attribute>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QCheckBox" name="checkBox_enableDraw">
+          <property name="text">
+           <string>Enable Draw Function</string>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <widget class="QCustomPlot" name="plot" native="true"/>
+        </item>
+       </layout>
+      </widget>
+     </widget>
+    </item>
+   </layout>
+  </widget>
+  <widget class="QMenuBar" name="menuBar">
+   <property name="geometry">
+    <rect>
+     <x>0</x>
+     <y>0</y>
+     <width>1082</width>
+     <height>23</height>
+    </rect>
+   </property>
+   <widget class="QMenu" name="menuFIle">
+    <property name="title">
+     <string>File</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuEdit">
+    <property name="title">
+     <string>Edit</string>
+    </property>
+   </widget>
+   <widget class="QMenu" name="menuAbout">
+    <property name="title">
+     <string>About</string>
+    </property>
+    <addaction name="actionAbout_TinySerialPort"/>
+    <addaction name="actionAbout_MULTIBEANS"/>
+   </widget>
+   <addaction name="menuFIle"/>
+   <addaction name="menuEdit"/>
+   <addaction name="menuAbout"/>
+  </widget>
+  <widget class="QToolBar" name="mainToolBar">
+   <attribute name="toolBarArea">
+    <enum>LeftToolBarArea</enum>
+   </attribute>
+   <attribute name="toolBarBreak">
+    <bool>false</bool>
+   </attribute>
+  </widget>
+  <widget class="QStatusBar" name="statusBar"/>
+  <action name="actionAbout_TinySerialPort">
+   <property name="text">
+    <string>About TinySerialPort</string>
+   </property>
+  </action>
+  <action name="actionAbout_MULTIBEANS">
+   <property name="text">
+    <string>About MULTIBEANS</string>
+   </property>
+  </action>
+ </widget>
+ <layoutdefault spacing="6" margin="11"/>
+ <customwidgets>
+  <customwidget>
+   <class>QCustomPlot</class>
+   <extends>QWidget</extends>
+   <header>qcustomplot.h</header>
+   <container>1</container>
+  </customwidget>
+ </customwidgets>
+ <resources/>
+ <connections/>
+</ui>
