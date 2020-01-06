@@ -24,7 +24,15 @@
 #include <QSerialPort>
 #include <QTimer>
 #include "global.h"
-#include "qcustomplot.h"
+#include <QDebug>
+#include <QFile>
+#include <QSerialPortInfo>
+#include <QMessageBox>
+#include <QString>
+#include <QByteArray>
+#include <QTimer>
+#include <QFont>
+#include "aboutdialog.h"
 
 namespace Ui {
 class SerialPort;
@@ -40,8 +48,7 @@ public:
 
     void StringToHex(QString str, QByteArray &senddata);
     char ConvertHexChar(char ch);
-
-    QCustomPlot *plot;
+    void initQssStyleSheet();
     long xcount;
     long xrange;
 
@@ -86,9 +93,11 @@ private slots:
 
     void on_pushButton_pause_clicked();
 
+    void on_actionAbout_TinySerialPort_triggered();
+
 private:
     Ui::SerialPort *ui;
-
+    AboutDialog *aboutDialog;
     QTimer *repeatSendTimer;
 
     QSerialPort *serial;
@@ -104,6 +113,8 @@ private:
     void SoftAutoWriteUart( void );
 
     QByteArray statusBarComInfo;
+    quint64 recCount;
+    quint64 sendCount;
 
 
 };

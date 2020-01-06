@@ -1,20 +1,26 @@
-/***
+/**
+ * \brief   This project about NETPLOT.
  *
- *                        ,%%%%%%%%,
- *                      ,%%/\%%%%/\%%
- *                     ,%%%\c "" J/%%%
- *            %.       %%%%/ o  o \%%%
- *            `%%.     %%%%    _  |%%%
- *             `%%     `%%%%(__Y__)%%'
- *             //       ;%%%%`\-/%%%'
- *            ((       /  `%%%%%%%'
- *             \\    .'          |
- *              \\  /       \  | |
- *               \\/         ) | |
- *                \         /_ | |__
- *                (___________))))))) OFFER.
+ * \License  THIS FILE IS PART OF MULTIBEANS PROJECT;
+ *           all of the files  - The core part of the project;
+ *           THIS PROGRAM IS NOT FREE SOFTWARE, NEED MULTIBEANS ORG LIC;
  *
-// Qt for Linux   Project.                                             GitLab
+ *                ________________     ___           _________________
+ *               |    __    __    |   |   |         |______     ______|
+ *               |   |  |  |  |   |   |   |                |   |
+ *               |   |  |__|  |   |   |   |________        |   |
+ *               |___|        |___|   |____________|       |___|
+ *
+ *                               MULTIBEANS ORG.
+ *                     Homepage: http://www.mltbns.com/
+ *
+ *           * You can download the license on our Github. ->
+ *           * -> https://github.com/lifimlt  <-
+ *           * Copyright (c) 2017 Carlos Wei: # carlos.wei.hk@gmail.com.
+ *           * Copyright (c) 2013-2017 MULTIBEANS ORG. http://www.mltbns.com/
+ *
+ *  \note    void.
+ ****************************************************************************/
 /****************************************************************************/
 /*                                                                          */
 /*  @file       : serialport.cpp                  	                        */
@@ -28,28 +34,24 @@
 /*  @Attention:                                                             */
 /*  ---------------------------------------------------------------------   */
 /*  |    Data    |  Behavior |     Offer      |          Content         |  */
-/*  | 2017.09.16 |   create  |Carlos Lopez(M) | ceate the document.      |  */
+/*  | 2017.09.16 |   create  |Carlos wei  (M) | ceate the document.      |  */
 /*  ---------------------------------------------------------------------   */
 /*  Email: carlos@mltbns.top                                  MULTIBEANS.   */
 /****************************************************************************/
 
 #include "serialport.h"
 #include "ui_serialport.h"
-#include <QDebug>
-#include <QSerialPortInfo>
-#include <QMessageBox>
-#include <QString>
-#include <QByteArray>
-#include <QTimer>
-#include <QFont>
+
 
 SerialPort::SerialPort(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::SerialPort)
 {
     ui->setupUi(this);
+    setWindowTitle("tinySerial");
     serial = new QSerialPort();
     RefreshTheUSBList();
+
     connect(serial,SIGNAL(readyRead()),this,SLOT( serialRcvData() ) );
 
     // value init.
@@ -57,7 +59,8 @@ SerialPort::SerialPort(QWidget *parent) :
     recAsciiFormat = true;
     repeatSend = ui->checkBox_repeat->isChecked();
     pauseComOutput = false;
-
+    recCount = 0;
+    sendCount = 0;
     // ui
     ui->pushButton_close->setEnabled(false);
     ui->pushButton_open->setEnabled(true);
@@ -78,29 +81,8 @@ SerialPort::SerialPort(QWidget *parent) :
     }else{
         repeatSendTimer->stop();
     }
+    initQssStyleSheet();
     connect( repeatSendTimer, SIGNAL(timeout()), this, SLOT(SoftAutoWriteUart()) );
-
-    xcount = 0;
-    xrange = 50;
-    ui->plot->setLocale(QLocale(QLocale::English, QLocale::UnitedKingdom)); // period as decimal separator and comma as thousand separator
-    ui->plot->legend->setVisible(true);
-    QFont legendFont = font();  // start out with MainWindow's font..
-    legendFont.setPointSize(9); // and make a bit smaller for legend
-    ui->plot->legend->setFont(legendFont);
-    ui->plot->legend->setBrush(QBrush(QColor(255,255,255,230)));
-    // by default, the legend is in the inset layout of the main axis rect. So this is how we access it to change legend placement:
-    ui->plot->axisRect()->insetLayout()->setInsetAlignment(0, Qt::AlignBottom|Qt::AlignRight);
-    // 生成数据，画出的是抛物线
-    ui->plot->addGraph();
-    // 为坐标轴添加标签
-    ui->plot->xAxis->setLabel("Num");
-    ui->plot->yAxis->setLabel("Mag");
-    // 设置坐标轴的范围，以看到所有数据
-    ui->plot->xAxis->setRange(0, xrange);
-    ui-> plot->yAxis->setRange(0, 50);
-
-
-    //
 
 }
 
@@ -117,21 +99,14 @@ void SerialPort::serialRcvData( void )
     recvStr = QString(recvArray);
     if( pauseComOutput == false ) {
         if( recAsciiFormat == true ) {
-            // ASCII display.
             qDebug() << recvStr ;
             ui->textBrowser_rec->append( recvStr );
+            recCount += recvStr.length();
         }else {
             ui->textBrowser_rec->append( recvArray.toHex() );
+            recCount += recvArray.toHex().length();
         }
-
-        if( enableDrawFunction == true ) {
-
-            qDebug() << "draw data!";
-#if false
-            ui->plot->graph(0)->addData(xcount,mag);
-            ui->plot->replot();
-#endif
-        }
+        ui->labelRBytes->setText( QString::number(recCount) );
     }
 }
 
@@ -518,17 +493,16 @@ void SerialPort::on_radioButton_rec_ascii_clicked()
 
 void SerialPort::on_radioButton_rec_hex_clicked()
 {
-    recAsciiFormat = false;
-    if( ui->checkBox_enableDraw->isChecked() ) {
-        ui->checkBox_enableDraw->setChecked(false);
-        enableDrawFunction = false;
-    }
-    qDebug() << "SYSTEM: Set recv data by HEX." ;
+
 }
 
 void SerialPort::on_pushButton_clear_clicked()
 {
     ui->textBrowser_rec->clear();
+    recCount = 0;
+    sendCount = 0;
+    ui->labelRBytes->setText("0");
+    ui->labelSBytes->setText("0");
 }
 
 void SerialPort::on_pushButton_send_clicked()
@@ -536,20 +510,22 @@ void SerialPort::on_pushButton_send_clicked()
     QString input = ui->textEdit_send->toPlainText();
     QByteArray temp;
 
-
     if( input.isEmpty() == true ) {
-        QMessageBox::warning(this,"Warring","The text is blank!\n Please input the data then send...");
+        QMessageBox::warning(this,"Warring","The text is empty!\n Please input the data then send...");
         return;
     }else {
 
         if( sendAsciiFormat == true ) {
             serial->write( input.toLatin1() );
+            sendCount += input.length();
             qDebug() << "UART SendAscii : " << input.toLatin1();
         }else{
             StringToHex(input, temp);
             serial->write( temp.toHex() );
+            sendCount += temp.toHex().length();
             qDebug() << "UART SendHex : " << temp.toHex();
         }
+        ui->labelSBytes->setText( QString::number(sendCount) );
     }
 }
 
@@ -629,7 +605,6 @@ void SerialPort::on_checkBox_enableDraw_clicked(bool checked)
 
     if( enableDrawFunction == true ) {
         if( ui->radioButton_rec_hex->isChecked() ) {
-            ui->checkBox_enableDraw->setChecked(false);
             QMessageBox::warning(this,"Warring","Enable draw function is failed!\n Please select the recieve mode by ASCII.");
             enableDrawFunction = false;
         }else{
@@ -641,7 +616,17 @@ void SerialPort::on_checkBox_enableDraw_clicked(bool checked)
     }
 
 }
-
+void SerialPort::initQssStyleSheet()
+{
+    QString     qss;
+    QFile       qssFile(":/qss/Aqua.qss");
+    qssFile.open(QFile::ReadOnly);
+    if( qssFile.isOpen() ) {
+        qss     = QLatin1String(qssFile.readAll());
+        qApp->setStyleSheet(qss);
+        qssFile.close();
+    }
+}
 
 void SerialPort::on_pushButton_pause_clicked()
 {
@@ -652,4 +637,12 @@ void SerialPort::on_pushButton_pause_clicked()
         pauseComOutput = false;
         ui->pushButton_pause->setText("pause");
     }
+}
+
+void SerialPort::on_actionAbout_TinySerialPort_triggered()
+{
+    AboutDialog *dialog = new AboutDialog();
+    dialog->setWindowTitle("About");
+    dialog->setModal(true);
+    dialog->show();
 }

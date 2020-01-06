@@ -374,7 +374,7 @@
     <item>
      <widget class="QTabWidget" name="tabWidget">
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
@@ -404,6 +404,9 @@
               <height>120</height>
              </size>
             </property>
+            <property name="styleSheet">
+             <string notr="true">font: 12pt &quot;Ubuntu&quot;;</string>
+            </property>
            </widget>
           </item>
           <item>
@@ -426,24 +429,73 @@
           </item>
          </layout>
         </item>
+        <item>
+         <widget class="Line" name="line">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
+         <layout class="QHBoxLayout" name="horizontalLayout_8">
+          <item>
+           <widget class="QLabel" name="label_7">
+            <property name="text">
+             <string>S/R Count:         </string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line_3">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_8">
+            <property name="text">
+             <string>Received Bytes:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelRBytes">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="Line" name="line_2">
+            <property name="orientation">
+             <enum>Qt::Vertical</enum>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="label_9">
+            <property name="text">
+             <string>Send Bytes:</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QLabel" name="labelSBytes">
+            <property name="text">
+             <string>0</string>
+            </property>
+           </widget>
+          </item>
+         </layout>
+        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="draw">
        <attribute name="title">
         <string>Draw Trans</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout">
-        <item>
-         <widget class="QCheckBox" name="checkBox_enableDraw">
-          <property name="text">
-           <string>Enable Draw Function</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCustomPlot" name="plot" native="true"/>
-        </item>
-       </layout>
+       <layout class="QVBoxLayout" name="verticalLayout"/>
       </widget>
      </widget>
     </item>
@@ -455,7 +507,7 @@
      <x>0</x>
      <y>0</y>
      <width>1082</width>
-     <height>23</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFIle">
@@ -479,14 +531,6 @@
    <addaction name="menuEdit"/>
    <addaction name="menuAbout"/>
   </widget>
-  <widget class="QToolBar" name="mainToolBar">
-   <attribute name="toolBarArea">
-    <enum>LeftToolBarArea</enum>
-   </attribute>
-   <attribute name="toolBarBreak">
-    <bool>false</bool>
-   </attribute>
-  </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionAbout_TinySerialPort">
    <property name="text">
@@ -500,14 +544,6 @@
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
- <customwidgets>
-  <customwidget>
-   <class>QCustomPlot</class>
-   <extends>QWidget</extends>
-   <header>qcustomplot.h</header>
-   <container>1</container>
-  </customwidget>
- </customwidgets>
  <resources/>
  <connections/>
 </ui>

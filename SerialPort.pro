@@ -9,7 +9,7 @@ QT  += serialport
 QT += printsupport
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
-TARGET = SerialPort
+TARGET = tinySerial
 TEMPLATE = app
 
 # The following define makes your compiler emit warnings if you use
@@ -26,10 +26,14 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += main.cpp\
         serialport.cpp \
-    qcustomplot.cpp
+    aboutdialog.cpp
 
 HEADERS  += serialport.h \
     global.h \
-    qcustomplot.h
+    aboutdialog.h
 
-FORMS    += serialport.ui
+FORMS    += serialport.ui \
+    aboutdialog.ui
+
+RESOURCES += \
+    resource/resource.qrc
