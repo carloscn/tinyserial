@@ -1,10 +1,18 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE QtCreatorProject>
+<<<<<<< HEAD
 <!-- Written by QtCreator 4.5.0, 2020-01-06T14:30:13. -->
 <qtcreator>
  <data>
   <variable>EnvironmentId</variable>
   <value type="QByteArray">{0c4a580f-4836-486c-93f5-cea970358e04}</value>
+=======
+<!-- Written by QtCreator 4.5.0, 2019-01-27T13:12:01. -->
+<qtcreator>
+ <data>
+  <variable>EnvironmentId</variable>
+  <value type="QByteArray">{6ce35409-e4c9-4b63-a0ea-ae3d656de032}</value>
+>>>>>>> 6a85225618a49a62e26aa5c2fc99f849ea039978
  </data>
  <data>
   <variable>ProjectExplorer.Project.ActiveTarget</variable>
@@ -304,7 +312,11 @@
     <valuelist type="QVariantList" key="PE.EnvironmentAspect.Changes"/>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DefaultDisplayName">SerialPort</value>
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.DisplayName">SerialPort2</value>
+<<<<<<< HEAD
     <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:/home/carlos/workspace/Qt/serialPort/SerialPort.pro</value>
+=======
+    <value type="QString" key="ProjectExplorer.ProjectConfiguration.Id">Qt4ProjectManager.Qt4RunConfiguration:/home/delvis/workspace/qt/tinyserial/SerialPort.pro</value>
+>>>>>>> 6a85225618a49a62e26aa5c2fc99f849ea039978
     <value type="bool" key="QmakeProjectManager.QmakeRunConfiguration.UseLibrarySearchPath">true</value>
     <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.CommandLineArguments"></value>
     <value type="QString" key="Qt4ProjectManager.Qt4RunConfiguration.ProFile">SerialPort.pro</value>
