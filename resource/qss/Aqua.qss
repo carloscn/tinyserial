@@ -86,8 +86,8 @@ QPushButton:hover{
 	border-bottom-color: qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 rgb(195, 195, 195), stop:1 rgb(222, 222, 222));
 	border-width: 1px;
 	border-radius: 5px;
-	color: rgb(0,0,0);
-	padding: 2px;
+        color: rgb(0,0,0);
+        padding: 2px;
 	background-color: rgb(255,255,255);
 }
 QPushButton:pressed{
@@ -98,7 +98,7 @@ QPushButton:pressed{
 	border-bottom-color: qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 rgb(215, 215, 215), stop:1 rgb(222, 222, 222));
 	border-width: 1px;
 	border-radius: 5px;
-	color: rgb(0,0,0);
+        color: rgb(255,255,255);
 	padding: 2px;
 	background-color: rgb(142,142,142);
 }
@@ -110,7 +110,7 @@ QPushButton:disabled{
 	border-bottom-color: qlineargradient(spread:pad, x1:0.5, y1:1, x2:0.5, y2:0, stop:0 rgb(215, 215, 215), stop:1 rgb(222, 222, 222));
 	border-width: 1px;
 	border-radius: 5px;
-	color: #808086;
+        color: rgb(255,255,255);
 	padding: 2px;
 	background-color: rgb(142,142,142);
 }

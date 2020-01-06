@@ -42,18 +42,17 @@
 #include "serialport.h"
 #include "ui_serialport.h"
 
+#define     VERISON         tr("v1.1")
 
 SerialPort::SerialPort(QWidget *parent) :
     QMainWindow(parent),
+    terminal(new QProcess),
+    serial(new QSerialPort),
+    repeatSendTimer(new QTimer),
     ui(new Ui::SerialPort)
 {
     ui->setupUi(this);
-    setWindowTitle("tinySerial");
-    serial = new QSerialPort();
-    RefreshTheUSBList();
-
-    connect(serial,SIGNAL(readyRead()),this,SLOT( serialRcvData() ) );
-
+    setWindowTitle("tinySerial " + VERISON);
     // value init.
     sendAsciiFormat = true;
     recAsciiFormat = true;
@@ -61,6 +60,7 @@ SerialPort::SerialPort(QWidget *parent) :
     pauseComOutput = false;
     recCount = 0;
     sendCount = 0;
+    isRoot = false;
     // ui
     ui->pushButton_close->setEnabled(false);
     ui->pushButton_open->setEnabled(true);
@@ -71,10 +71,9 @@ SerialPort::SerialPort(QWidget *parent) :
     ui->comboBox_databits->setCurrentIndex( CONFIG_DATABITS_8_INDEX );
     ui->comboBox_stopbits->setCurrentText( CONFIG_STOPBIT_ONE_INDEX );
     ui->comboBox_flowctrl->setCurrentIndex( CONFIG_FLOWCTRL_NONE_INDEX );
-
     // timer
     int repeatTime = ui->spinBox_repeat->text().toInt();
-    repeatSendTimer = new QTimer(this);
+
 
     if( repeatSend == true ) {
         repeatSendTimer->start( repeatTime );
@@ -83,7 +82,8 @@ SerialPort::SerialPort(QWidget *parent) :
     }
     initQssStyleSheet();
     connect( repeatSendTimer, SIGNAL(timeout()), this, SLOT(SoftAutoWriteUart()) );
-
+    connect(serial,SIGNAL(readyRead()),this,SLOT( serialRcvData() ) );
+    RefreshTheUSBList();
 }
 
 SerialPort::~SerialPort()
@@ -98,12 +98,30 @@ void SerialPort::serialRcvData( void )
     recvArray = serial->readAll();
     recvStr = QString(recvArray);
     if( pauseComOutput == false ) {
+        QDateTime local(QDateTime::currentDateTime());
+        QString localTime = "<" + local.toString("hh:mm:ss.zzz") + ">";
+        QString str;
         if( recAsciiFormat == true ) {
             qDebug() << recvStr ;
-            ui->textBrowser_rec->append( recvStr );
+            str = recvStr;
+            if (isShowSend) {
+                str = "rx -> "  + recvStr;
+            }
+            if (isShowTime) {
+                str = localTime + str;
+            }
+            ui->textBrowser_rec->append( str );
             recCount += recvStr.length();
         }else {
-            ui->textBrowser_rec->append( recvArray.toHex() );
+            str = recvStr;
+            if (isShowSend) {
+                str = "rx -> "  + recvArray.toHex();
+            }
+            if (isShowTime) {
+                str = localTime + str;
+            }
+            ui->textBrowser_rec->append( str );
+
             recCount += recvArray.toHex().length();
         }
         ui->labelRBytes->setText( QString::number(recCount) );
@@ -117,18 +135,41 @@ void SerialPort::SoftAutoWriteUart( void )
     QByteArray temp;
     qDebug() << "Hello!!!! Timer!";
     if( input.isEmpty() == true ) {
-        QMessageBox::warning(this,"Warring","The text is blank!\n Please input the data then send...");
+        QMessageBox::warning(this,"Warning","The text is blank!\n Please input the data then send...");
+        ui->checkBox_repeat->setChecked(false);
+        repeatSendTimer->stop();
         return;
     }else {
-
+        QDateTime local(QDateTime::currentDateTime());
+        QString localTime = "<" + local.toString("hh:mm:ss.zzz") + ">";
+        QString str;
         if( sendAsciiFormat == true ) {
             serial->write( input.toLatin1() );
+            str += input.toLatin1();
+            if (isShowSend) {
+                str = "tx -> " + str;
+            }
+            if (isShowTime) {
+                str = localTime + str;
+            }
+            ui->textBrowser_rec->append(str);
+            sendCount += input.length();
             qDebug() << "UART SendAscii : " << input.toLatin1();
         }else{
             StringToHex(input, temp);
             serial->write( temp.toHex() );
+            str += input.toLatin1();
+            if (isShowSend) {
+                str = "tx -> " + str;
+            }
+            if (isShowTime) {
+                str = localTime + str;
+            }
+            ui->textBrowser_rec->append(str);
+            sendCount += temp.toHex().length();
             qDebug() << "UART SendHex : " << temp.toHex();
         }
+        ui->labelSBytes->setText( QString::number(sendCount) );
     }
 
 }
@@ -282,17 +323,18 @@ void SerialPort::on_pushButton_open_clicked()
     serial->setPortName(currentConnectCom);
     //serial.close();
     if( ui->comboBox_serialPort->currentIndex() == -1 ) {
-        QMessageBox::warning(this,"Warring","Please click firstly the scan button to check your available devices.\nthan connect after selecting one device in the list.");
+        QMessageBox::warning(this,"Warning","Please click firstly the scan button to check your available devices.\nthan connect after selecting one device in the list.");
         return;
     }
     if (!serial->open(QIODevice::ReadWrite)) {
-        QMessageBox::warning(this,"Warring","Open serial port fail!\n Please see the the information window to solve problem.");
+        QMessageBox::warning(this,"Warning","Open serial port fail!\n Please see the the information window to solve problem.");
         qDebug() << tr("SYSTEM: The serial port failed to open,Please check as follows: ");
         qDebug() << tr("        1> if the serial port is occupied by other software? ");
         qDebug() << tr("        2> if the serial port connection is normal?");
         qDebug() << tr("        3> if the program is run at root user? You can use the cmd sudo ./(programname) and type your password to be done.");
 
         ui->comboBox_serialPort->setEnabled(true);
+        ui->statusBar->showMessage("Open:" + portInfo + "failed!" );
     } else {
         qDebug() << tr("SYSTEM: The system has been connected with ")+portInfo+" " ;
         ui->pushButton_close->setEnabled(true);
@@ -301,10 +343,9 @@ void SerialPort::on_pushButton_open_clicked()
         ui->pushButton_scan->setEnabled(false);
         ui->pushButton_send->setEnabled(true);
         QMessageBox::information(this,"Information", "UART: "+ portInfo+" has been connected! \n"+"Wait device signals.");
+        ui->statusBar->showMessage("Open:" + portInfo + "ok!");
     }
-
     qDebug() << "The serial has been openned!! \n";
-
 }
 
 void SerialPort::RefreshTheUSBList( void )
@@ -320,7 +361,13 @@ void SerialPort::RefreshTheUSBList( void )
         portName = info.portName();
         uartName = info.description();
         ui->comboBox_serialPort->addItem(  portName +",(" +uartName+") "   );
+        if (isRoot == false) {
+            qDebug() << "reset: sudo chmod 777 /dev/" + portName;
+            terminal->start("pkexec chmod 777 /dev/" + portName);
+            isRoot = true;
+        }
         qDebug() << tr("SYSTEM: Scan the uart device: ")+uartName + "("+portName+")"+tr(" has been added to the available list! ");
+
     }
 }
 
@@ -338,6 +385,9 @@ void SerialPort::on_pushButton_close_clicked()
     ui->pushButton_send->setEnabled(false);
     ui->pushButton_scan->setEnabled(true);
     ui->comboBox_serialPort->setEnabled(true);
+    ui->statusBar->showMessage("No Port is Connected!");
+    ui->checkBox_repeat->setChecked(false);
+    repeatSendTimer->stop();
 }
 
 void SerialPort::on_comboBox_baudrate_currentIndexChanged(int index)
@@ -511,17 +561,36 @@ void SerialPort::on_pushButton_send_clicked()
     QByteArray temp;
 
     if( input.isEmpty() == true ) {
-        QMessageBox::warning(this,"Warring","The text is empty!\n Please input the data then send...");
+        if (!ui->checkBox_repeat->isChecked())
+            QMessageBox::warning(this,"Warning","The send text is empty!\n Please input the data...");
         return;
     }else {
-
+        QDateTime local(QDateTime::currentDateTime());
+        QString localTime = "<" + local.toString("hh:mm:ss.zzz") + ">";
+        QString str;
         if( sendAsciiFormat == true ) {
             serial->write( input.toLatin1() );
+            str += input.toLatin1();
+            if (isShowSend) {
+                str = "tx -> " + str;
+            }
+            if (isShowTime) {
+                str = localTime + str;
+            }
+            ui->textBrowser_rec->append(str);
             sendCount += input.length();
             qDebug() << "UART SendAscii : " << input.toLatin1();
         }else{
             StringToHex(input, temp);
             serial->write( temp.toHex() );
+            str += input.toLatin1();
+            if (isShowSend) {
+                str = "tx -> " + str;
+            }
+            if (isShowTime) {
+                str = localTime + str;
+            }
+            ui->textBrowser_rec->append(str);
             sendCount += temp.toHex().length();
             qDebug() << "UART SendHex : " << temp.toHex();
         }
@@ -591,7 +660,6 @@ void SerialPort::on_checkBox_repeat_clicked(bool checked)
     repeatSend = checked;
     if( repeatSend == true ) {
         repeatSendTimer->start( ui->spinBox_repeat->text().toInt()  );
-
     }else{
         repeatSendTimer->stop();
     }
@@ -605,7 +673,7 @@ void SerialPort::on_checkBox_enableDraw_clicked(bool checked)
 
     if( enableDrawFunction == true ) {
         if( ui->radioButton_rec_hex->isChecked() ) {
-            QMessageBox::warning(this,"Warring","Enable draw function is failed!\n Please select the recieve mode by ASCII.");
+            QMessageBox::warning(this,"Warning","Enable draw function is failed!\n Please select the recieve mode by ASCII.");
             enableDrawFunction = false;
         }else{
             qDebug() << "Enable draw function.";
@@ -645,4 +713,14 @@ void SerialPort::on_actionAbout_TinySerialPort_triggered()
     dialog->setWindowTitle("About");
     dialog->setModal(true);
     dialog->show();
+}
+
+void SerialPort::on_checkBox_dispsend_clicked(bool checked)
+{
+    isShowSend = checked;
+}
+
+void SerialPort::on_checkBox_disptime_clicked(bool checked)
+{
+    isShowTime = checked;
 }
