@@ -32,6 +32,8 @@
 #include <QByteArray>
 #include <QTimer>
 #include <QFont>
+#include <QProcess>
+#include <QDateTime>
 #include "aboutdialog.h"
 
 namespace Ui {
@@ -95,14 +97,23 @@ private slots:
 
     void on_actionAbout_TinySerialPort_triggered();
 
+    void SoftAutoWriteUart( void );
+
+    void on_checkBox_dispsend_clicked(bool checked);
+
+    void on_checkBox_disptime_clicked(bool checked);
+
 private:
     Ui::SerialPort *ui;
     AboutDialog *aboutDialog;
     QTimer *repeatSendTimer;
-
+    QProcess *terminal;
     QSerialPort *serial;
     QString currentConnectCom;
 
+    bool isRoot;
+    bool isShowSend;
+    bool isShowTime;
     bool recAsciiFormat;
     bool sendAsciiFormat;
     bool repeatSend;
@@ -110,7 +121,7 @@ private:
     bool pauseComOutput;
 
     void RefreshTheUSBList( void );
-    void SoftAutoWriteUart( void );
+
 
     QByteArray statusBarComInfo;
     quint64 recCount;
