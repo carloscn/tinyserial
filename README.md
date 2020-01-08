@@ -9,5 +9,5 @@ Github地址：https://github.com/lifimlt/tinyserial
 
 # TinySerial的使用
 在终端输入`tinyserial`即可启动。
-![](https://img2018.cnblogs.com/blog/810200/202001/810200-20200108135831872-496667182.png)
+![](img/2020-01-0412:46:16.png)
 
