@@ -11,3 +11,4 @@ Github地址：https://github.com/lifimlt/tinyserial
 在终端输入`tinyserial`即可启动。
 ![](img/2020-01-0412:46:16.png)
 
+modify by Carlos.
