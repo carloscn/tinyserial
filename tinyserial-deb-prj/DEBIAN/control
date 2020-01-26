@@ -1,8 +1,0 @@
-Package:tinyserial
-Version:1.1
-Section:utils
-Priority:extra
-Maintainer:Carlos Wei (carlos.wei.hk@gmail.com)
-Depends:libqt5widgets5,libqt5gui5,libqt5core5a,libqt5x11extras5,libqt5x11extras5-dev,libqt5serialport5,libqt5dbus5,libqt5network5,libqt5svg5
-Architecture:amd64
-Description: tinySerial is a opensource GUI serial port debug software on Linux.

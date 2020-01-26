@@ -1,9 +1,0 @@
-
-echo "Start to remove"
-rm -rf  /usr/share/applications/tinyserial.desktop
-rm -rf  /usr/share/pixmaps/tinyserial.png 
-rm -rf  /usr/bin/tinyserial
-rm -rf  /usr/bin/tinyserial
-rm -rf /opt/tinyserial
-rm -rf /var/lib/dpkg/info/tinyserial*
-echo "Remove finished!"
