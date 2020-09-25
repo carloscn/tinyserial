@@ -25,12 +25,13 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 
 SOURCES += main.cpp\
-        serialport.cpp \
-    aboutdialog.cpp
+    aboutdialog.cpp \
+    mainwindow.cpp
 
-HEADERS  += serialport.h \
+HEADERS  += \
     global.h \
-    aboutdialog.h
+    aboutdialog.h \
+    mainwindow.h
 
 FORMS    += serialport.ui \
     aboutdialog.ui

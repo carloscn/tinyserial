@@ -34,19 +34,20 @@
 #include <QFont>
 #include <QProcess>
 #include <QDateTime>
+#include <QScrollBar>
 #include "aboutdialog.h"
 
 namespace Ui {
 class SerialPort;
 }
 
-class SerialPort : public QMainWindow
+class MainWindow : public QMainWindow
 {
     Q_OBJECT
 
 public:
-    explicit SerialPort(QWidget *parent = 0);
-    ~SerialPort();
+    explicit MainWindow(QWidget *parent = 0);
+    ~MainWindow();
 
     void StringToHex(QString str, QByteArray &senddata);
     char ConvertHexChar(char ch);
@@ -110,6 +111,7 @@ private:
     QProcess *terminal;
     QSerialPort *serial;
     QString currentConnectCom;
+    QByteArray globalRecvData;
 
     bool isRoot;
     bool isShowSend;

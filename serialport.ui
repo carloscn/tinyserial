@@ -465,7 +465,7 @@
           <item>
            <widget class="QTextBrowser" name="textBrowser_rec">
             <property name="styleSheet">
-             <string notr="true">font: 12pt &quot;Ubuntu Mono&quot;;</string>
+             <string notr="true"/>
             </property>
            </widget>
           </item>
@@ -484,7 +484,7 @@
              </size>
             </property>
             <property name="styleSheet">
-             <string notr="true">font: 12pt &quot;Ubuntu Mono&quot;;</string>
+             <string notr="true"/>
             </property>
            </widget>
           </item>
@@ -526,7 +526,7 @@
      <x>0</x>
      <y>0</y>
      <width>1082</width>
-     <height>22</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFIle">
