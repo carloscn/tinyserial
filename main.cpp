@@ -16,13 +16,13 @@
 /*  ---------------------------------------------------------------------   */
 /*  Email: carlos@mltbns.top                                  MULTIBEANS.   */
 /****************************************************************************/
-#include "serialport.h"
+#include "mainwindow.h"
 #include <QApplication>
 
 int main(int argc, char *argv[])
 {
     QApplication a(argc, argv);
-    SerialPort w;
+    MainWindow w;
     w.show();
 
     return a.exec();

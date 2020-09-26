@@ -12,12 +12,12 @@
  *               |___|        |___|   |____________|       |___|
  *
  *                               MULTIBEANS ORG.
- *                     Homepage: http://www.mltbns.com/
+ *                     Homepage: http://www.mlts.tech/
  *
  *           * You can download the license on our Github. ->
- *           * -> https://github.com/lifimlt  <-
+ *           * -> https://github.com/carloscn  <-
  *           * Copyright (c) 2017 Carlos Wei: # carlos.wei.hk@gmail.com.
- *           * Copyright (c) 2013-2017 MULTIBEANS ORG. http://www.mltbns.com/
+ *           * Copyright (c) 2013-2017 MULTIBEANS ORG. http://www.mlts.tech/
  *
  *  \note    void.
  ****************************************************************************/
@@ -26,7 +26,7 @@
 /*  @file       : serialport.cpp                  	                        */
 /*  @Copyright  : MULTIBEANS ORG rights reserved.                           */
 /*  @Revision   : Ver 1.0.                                                  */
-/*  @Data       : 2017.09.16 Realse.                                        */
+/*  @Data       : 2017.09.16 Release.                                        */
 /*  @Belong     : PROJECT.                                                  */
 /*  @Git        : https://gitlab.com/coarlqq/serialPort.git                 */
 /*  **code : (UTF-8) in Linux(Ubuntu16.04). Qt 5.7.1 for Linux platform.    */
@@ -35,16 +35,17 @@
 /*  ---------------------------------------------------------------------   */
 /*  |    Data    |  Behavior |     Offer      |          Content         |  */
 /*  | 2017.09.16 |   create  |Carlos wei  (M) | ceate the document.      |  */
+/*  | 2020.09.25 |   modify  |Carlos wei  (M) | v2.0  the document.      |  */
 /*  ---------------------------------------------------------------------   */
-/*  Email: carlos@mltbns.top                                  MULTIBEANS.   */
+/*  Email: carlos@mlts.tech                                   MULTIBEANS.   */
 /****************************************************************************/
 
-#include "serialport.h"
+#include "mainwindow.h"
 #include "ui_serialport.h"
 
-#define     VERISON         tr("v1.1")
+#define     VERISON         tr("v2.0")
 
-SerialPort::SerialPort(QWidget *parent) :
+MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     terminal(new QProcess),
     serial(new QSerialPort),
@@ -53,7 +54,8 @@ SerialPort::SerialPort(QWidget *parent) :
 {
     ui->setupUi(this);
     setWindowTitle("tinySerial " + VERISON);
-    // value init.
+
+    /*Send ASCII Format*/
     sendAsciiFormat = true;
     recAsciiFormat = true;
     repeatSend = ui->checkBox_repeat->isChecked();
@@ -61,7 +63,8 @@ SerialPort::SerialPort(QWidget *parent) :
     recCount = 0;
     sendCount = 0;
     isRoot = false;
-    // ui
+
+    /*UI init*/
     ui->pushButton_close->setEnabled(false);
     ui->pushButton_open->setEnabled(true);
     ui->pushButton_scan->setEnabled(true);
@@ -71,32 +74,37 @@ SerialPort::SerialPort(QWidget *parent) :
     ui->comboBox_databits->setCurrentIndex( CONFIG_DATABITS_8_INDEX );
     ui->comboBox_stopbits->setCurrentText( CONFIG_STOPBIT_ONE_INDEX );
     ui->comboBox_flowctrl->setCurrentIndex( CONFIG_FLOWCTRL_NONE_INDEX );
-    // timer
+
+    /*Timer as repeat init*/
     int repeatTime = ui->spinBox_repeat->text().toInt();
-
-
     if( repeatSend == true ) {
         repeatSendTimer->start( repeatTime );
     }else{
         repeatSendTimer->stop();
     }
-    initQssStyleSheet();
+
+    /*Theme init*/
+    //initQssStyleSheet();
     connect( repeatSendTimer, SIGNAL(timeout()), this, SLOT(SoftAutoWriteUart()) );
     connect(serial,SIGNAL(readyRead()),this,SLOT( serialRcvData() ) );
     RefreshTheUSBList();
+    on_checkBox_dispsend_clicked(false);
+    on_checkBox_disptime_clicked(false);
 }
 
-SerialPort::~SerialPort()
+MainWindow::~MainWindow()
 {
     delete ui;
 }
 
-void SerialPort::serialRcvData( void )
+void MainWindow::serialRcvData( void )
 {
     QByteArray recvArray;
+    QScrollBar *scrollbar = ui->textBrowser_rec->verticalScrollBar();
     QString recvStr;
     recvArray = serial->readAll();
     recvStr = QString(recvArray);
+
     if( pauseComOutput == false ) {
         QDateTime local(QDateTime::currentDateTime());
         QString localTime = "<" + local.toString("hh:mm:ss.zzz") + ">";
@@ -110,7 +118,8 @@ void SerialPort::serialRcvData( void )
             if (isShowTime) {
                 str = localTime + str;
             }
-            ui->textBrowser_rec->append( str );
+            ui->textBrowser_rec->insertPlainText( str );
+            scrollbar->setSliderPosition(scrollbar->maximum());;
             recCount += recvStr.length();
         }else {
             str = recvStr;
@@ -120,7 +129,7 @@ void SerialPort::serialRcvData( void )
             if (isShowTime) {
                 str = localTime + str;
             }
-            ui->textBrowser_rec->append( str );
+            ui->textBrowser_rec->insertPlainText( str );
 
             recCount += recvArray.toHex().length();
         }
@@ -128,12 +137,11 @@ void SerialPort::serialRcvData( void )
     }
 }
 
-
-void SerialPort::SoftAutoWriteUart( void )
+void MainWindow::SoftAutoWriteUart( void )
 {
     QString input = ui->textEdit_send->toPlainText();
     QByteArray temp;
-    qDebug() << "Hello!!!! Timer!";
+
     if( input.isEmpty() == true ) {
         QMessageBox::warning(this,"Warning","The text is blank!\n Please input the data then send...");
         ui->checkBox_repeat->setChecked(false);
@@ -152,7 +160,7 @@ void SerialPort::SoftAutoWriteUart( void )
             if (isShowTime) {
                 str = localTime + str;
             }
-            ui->textBrowser_rec->append(str);
+            ui->textBrowser_rec->insertPlainText(str);
             sendCount += input.length();
             qDebug() << "UART SendAscii : " << input.toLatin1();
         }else{
@@ -165,7 +173,7 @@ void SerialPort::SoftAutoWriteUart( void )
             if (isShowTime) {
                 str = localTime + str;
             }
-            ui->textBrowser_rec->append(str);
+            ui->textBrowser_rec->insertPlainText(str);
             sendCount += temp.toHex().length();
             qDebug() << "UART SendHex : " << temp.toHex();
         }
@@ -175,7 +183,7 @@ void SerialPort::SoftAutoWriteUart( void )
 }
 // 0       1      2      3           4      5
 // STATE | NAME | BAUD | DATABAYTE | STOP | PARITY |
-void SerialPort::on_pushButton_open_clicked()
+void MainWindow::on_pushButton_open_clicked()
 {
 
     qint8 comboxIndex = 0xff;
@@ -185,12 +193,10 @@ void SerialPort::on_pushButton_open_clicked()
     switch( comboxIndex ) {
     case CONFIG_BAUDRATE_1200_INDEX:
         serial->setBaudRate(QSerialPort::Baud1200);
-
         qDebug() << "Baud Rate: 1200; ";
         break;
     case CONFIG_BAUDRATE_2400_INDEX:
         serial->setBaudRate(QSerialPort::Baud2400);
-
         qDebug() << "Baud Rate: 2400; ";
         break;
     case CONFIG_BAUDRATE_4800_INDEX:
@@ -211,17 +217,14 @@ void SerialPort::on_pushButton_open_clicked()
     case CONFIG_BAUDRATE_38400_INDEX:
         serial->setBaudRate(QSerialPort::Baud38400);
         qDebug() << "Baud Rate: 38400; ";
-
         break;
     case CONFIG_BAUDRATE_57600_INDEX:
         serial->setBaudRate(QSerialPort::Baud57600);
         qDebug() << "Baud Rate: 57600; ";
-
         break;
     case CONFIG_BAUDRATE_115200_INDEX:
         serial->setBaudRate(QSerialPort::Baud115200);
         qDebug() << "Baud Rate: 115200; ";
-
         break;
     }
     // set stop bits.
@@ -348,7 +351,7 @@ void SerialPort::on_pushButton_open_clicked()
     qDebug() << "The serial has been openned!! \n";
 }
 
-void SerialPort::RefreshTheUSBList( void )
+void MainWindow::RefreshTheUSBList( void )
 {
     QString portName;
     QString uartName;
@@ -371,13 +374,13 @@ void SerialPort::RefreshTheUSBList( void )
     }
 }
 
-void SerialPort::on_pushButton_scan_clicked()
+void MainWindow::on_pushButton_scan_clicked()
 {
     RefreshTheUSBList();
 }
 
 
-void SerialPort::on_pushButton_close_clicked()
+void MainWindow::on_pushButton_close_clicked()
 {
     serial->close();
     ui->pushButton_open->setEnabled( true );
@@ -390,7 +393,7 @@ void SerialPort::on_pushButton_close_clicked()
     repeatSendTimer->stop();
 }
 
-void SerialPort::on_comboBox_baudrate_currentIndexChanged(int index)
+void MainWindow::on_comboBox_baudrate_currentIndexChanged(int index)
 {
     switch( index ) {
     case CONFIG_BAUDRATE_1200_INDEX:
@@ -429,7 +432,7 @@ void SerialPort::on_comboBox_baudrate_currentIndexChanged(int index)
 
 }
 
-void SerialPort::on_comboBox_stopbits_currentIndexChanged(int index)
+void MainWindow::on_comboBox_stopbits_currentIndexChanged(int index)
 {
     switch (index) {
     case CONFIG_STOPBIT_ONE_INDEX:
@@ -447,7 +450,7 @@ void SerialPort::on_comboBox_stopbits_currentIndexChanged(int index)
     }
 }
 
-void SerialPort::on_comboBox_checkdigit_currentIndexChanged(int index)
+void MainWindow::on_comboBox_checkdigit_currentIndexChanged(int index)
 {
 
     switch( index ) {
@@ -480,7 +483,7 @@ void SerialPort::on_comboBox_checkdigit_currentIndexChanged(int index)
     }
 }
 
-void SerialPort::on_comboBox_flowctrl_currentIndexChanged(int index)
+void MainWindow::on_comboBox_flowctrl_currentIndexChanged(int index)
 {
     switch (index) {
     case CONFIG_FLOWCTRL_NONE_INDEX:
@@ -498,7 +501,7 @@ void SerialPort::on_comboBox_flowctrl_currentIndexChanged(int index)
     }
 }
 
-void SerialPort::on_comboBox_databits_currentIndexChanged(int index)
+void MainWindow::on_comboBox_databits_currentIndexChanged(int index)
 {
     switch (index) {
     case CONFIG_DATABITS_5_INDEX:
@@ -522,31 +525,31 @@ void SerialPort::on_comboBox_databits_currentIndexChanged(int index)
         break;
     }
 }
-void SerialPort::on_radioButton_send_ascii_clicked()
+void MainWindow::on_radioButton_send_ascii_clicked()
 {
     sendAsciiFormat = true;
     qDebug() << "SYSTEM: Set send data by ASCII." ;
 }
 
-void SerialPort::on_radioButton_send_hex_clicked()
+void MainWindow::on_radioButton_send_hex_clicked()
 {
     sendAsciiFormat = false;
     qDebug() << "SYSTEM: Set send data by HEX." ;
 }
 
-void SerialPort::on_radioButton_rec_ascii_clicked()
+void MainWindow::on_radioButton_rec_ascii_clicked()
 {
     recAsciiFormat = true;
 
     qDebug() << "SYSTEM: Set recv data by ASCII." ;
 }
 
-void SerialPort::on_radioButton_rec_hex_clicked()
+void MainWindow::on_radioButton_rec_hex_clicked()
 {
 
 }
 
-void SerialPort::on_pushButton_clear_clicked()
+void MainWindow::on_pushButton_clear_clicked()
 {
     ui->textBrowser_rec->clear();
     recCount = 0;
@@ -555,7 +558,7 @@ void SerialPort::on_pushButton_clear_clicked()
     ui->labelSBytes->setText("0");
 }
 
-void SerialPort::on_pushButton_send_clicked()
+void MainWindow::on_pushButton_send_clicked()
 {
     QString input = ui->textEdit_send->toPlainText();
     QByteArray temp;
@@ -599,7 +602,7 @@ void SerialPort::on_pushButton_send_clicked()
 }
 
 
-void SerialPort::StringToHex(QString str, QByteArray &senddata)
+void MainWindow::StringToHex(QString str, QByteArray &senddata)
 {
     int hexdata,lowhexdata;
     int hexdatalen = 0;
@@ -631,7 +634,7 @@ void SerialPort::StringToHex(QString str, QByteArray &senddata)
     senddata.resize(hexdatalen);
 }
 
-char SerialPort::ConvertHexChar(char ch)
+char MainWindow::ConvertHexChar(char ch)
 {
     if((ch >= '0') && (ch <= '9'))
         return ch-0x30;
@@ -642,7 +645,7 @@ char SerialPort::ConvertHexChar(char ch)
     else return (-1);
 }
 
-void SerialPort::on_spinBox_repeat_valueChanged(int arg1)
+void MainWindow::on_spinBox_repeat_valueChanged(int arg1)
 {
     if( ui->checkBox_repeat->isChecked() ) {
 
@@ -655,7 +658,7 @@ void SerialPort::on_spinBox_repeat_valueChanged(int arg1)
 
 }
 
-void SerialPort::on_checkBox_repeat_clicked(bool checked)
+void MainWindow::on_checkBox_repeat_clicked(bool checked)
 {
     repeatSend = checked;
     if( repeatSend == true ) {
@@ -667,7 +670,7 @@ void SerialPort::on_checkBox_repeat_clicked(bool checked)
 
 
 
-void SerialPort::on_checkBox_enableDraw_clicked(bool checked)
+void MainWindow::on_checkBox_enableDraw_clicked(bool checked)
 {
     enableDrawFunction = checked;
 
@@ -684,7 +687,7 @@ void SerialPort::on_checkBox_enableDraw_clicked(bool checked)
     }
 
 }
-void SerialPort::initQssStyleSheet()
+void MainWindow::initQssStyleSheet()
 {
     QString     qss;
     QFile       qssFile(":/qss/Aqua.qss");
@@ -696,7 +699,7 @@ void SerialPort::initQssStyleSheet()
     }
 }
 
-void SerialPort::on_pushButton_pause_clicked()
+void MainWindow::on_pushButton_pause_clicked()
 {
     if( pauseComOutput == false ) {
         pauseComOutput = true;
@@ -707,7 +710,7 @@ void SerialPort::on_pushButton_pause_clicked()
     }
 }
 
-void SerialPort::on_actionAbout_TinySerialPort_triggered()
+void MainWindow::on_actionAbout_TinySerialPort_triggered()
 {
     AboutDialog *dialog = new AboutDialog();
     dialog->setWindowTitle("About");
@@ -715,12 +718,12 @@ void SerialPort::on_actionAbout_TinySerialPort_triggered()
     dialog->show();
 }
 
-void SerialPort::on_checkBox_dispsend_clicked(bool checked)
+void MainWindow::on_checkBox_dispsend_clicked(bool checked)
 {
     isShowSend = checked;
 }
 
-void SerialPort::on_checkBox_disptime_clicked(bool checked)
+void MainWindow::on_checkBox_disptime_clicked(bool checked)
 {
     isShowTime = checked;
 }
