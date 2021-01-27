@@ -1,17 +1,21 @@
 
-chmod 755 postinst
 echo "Start to install"
 
 setup_path="/opt/tinyserial"
 
 if [ ! -x "$setup_path" ]; then
-	mkdir "$setup_path"
+    mkdir "$setup_path"
 fi
 
 cp -ri /tinyserial/application/tinyserial/tinyserial/* $setup_path
 cp -ri /tinyserial/application/lib/* $setup_path
 cp -ri /tinyserial/application/lib/tinyserial.png /usr/share/pixmaps/
-cp -ri /tinyserial/application/tinyserial/tinyserial/tinyserial /usr/bin/
+if [ ! -f /usr/bin/tinyserial ]; then
+    echo "old tinyserial has exist."
+    echo "delete the old tinyserial app."
+    rm -rf /usr/bin/tinyserial
+fi
+ln -s $setup_path/tinyserial /usr/bin/tinyserial
 
 chmod 777 /usr/bin/tinyserial
 chmod 777 $setup_path/tinyserial.desktop
