@@ -35,6 +35,7 @@
 #include <QProcess>
 #include <QDateTime>
 #include <QScrollBar>
+#include <QFileDialog>
 #include "aboutdialog.h"
 
 namespace Ui {
@@ -103,6 +104,8 @@ private slots:
     void on_checkBox_dispsend_clicked(bool checked);
 
     void on_checkBox_disptime_clicked(bool checked);
+
+    void on_actionSave_Log_File_triggered();
 
 private:
     Ui::SerialPort *ui;
