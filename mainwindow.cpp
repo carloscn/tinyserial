@@ -1,5 +1,5 @@
 /**
- * \brief   This project about NETPLOT.
+ * \brief   This project about TinySerial Tool.
  *
  * \License  THIS FILE IS PART OF MULTIBEANS PROJECT;
  *           all of the files  - The core part of the project;
@@ -17,7 +17,7 @@
  *           * You can download the license on our Github. ->
  *           * -> https://github.com/carloscn  <-
  *           * Copyright (c) 2017 Carlos Wei: # carlos.wei.hk@gmail.com.
- *           * Copyright (c) 2013-2017 MULTIBEANS ORG. http://www.mlts.tech/
+ *           * Copyright (c) 2013-2020 MULTIBEANS ORG. http://www.mlts.tech/
  *
  *  \note    void.
  ****************************************************************************/
@@ -274,7 +274,6 @@ void MainWindow::on_pushButton_open_clicked()
         serial->setParity( QSerialPort::MarkParity );
         qDebug() << "partiy set: MarkParity.";
         break;
-
     }
 
     // set databytes.
@@ -525,6 +524,7 @@ void MainWindow::on_comboBox_databits_currentIndexChanged(int index)
         break;
     }
 }
+
 void MainWindow::on_radioButton_send_ascii_clicked()
 {
     sendAsciiFormat = true;
@@ -540,7 +540,6 @@ void MainWindow::on_radioButton_send_hex_clicked()
 void MainWindow::on_radioButton_rec_ascii_clicked()
 {
     recAsciiFormat = true;
-
     qDebug() << "SYSTEM: Set recv data by ASCII." ;
 }
 
@@ -600,7 +599,6 @@ void MainWindow::on_pushButton_send_clicked()
         ui->labelSBytes->setText( QString::number(sendCount) );
     }
 }
-
 
 void MainWindow::StringToHex(QString str, QByteArray &senddata)
 {
@@ -668,8 +666,6 @@ void MainWindow::on_checkBox_repeat_clicked(bool checked)
     }
 }
 
-
-
 void MainWindow::on_checkBox_enableDraw_clicked(bool checked)
 {
     enableDrawFunction = checked;
@@ -687,6 +683,7 @@ void MainWindow::on_checkBox_enableDraw_clicked(bool checked)
     }
 
 }
+
 void MainWindow::initQssStyleSheet()
 {
     QString     qss;
@@ -726,4 +723,27 @@ void MainWindow::on_checkBox_dispsend_clicked(bool checked)
 void MainWindow::on_checkBox_disptime_clicked(bool checked)
 {
     isShowTime = checked;
+}
+
+void MainWindow::on_actionSave_Log_File_triggered()
+{
+    if (ui->textBrowser_rec->toPlainText().isEmpty()) {
+        QMessageBox::warning(this,"Warning","The text browser is blank! Can't be saved.\n");
+        return;
+    }
+    QString fileName = QFileDialog::getSaveFileName(
+        this,
+        tr("save as a log file."),
+        NULL,
+        tr("All files(*.*)"));
+    if (fileName.isEmpty()) {
+        QMessageBox::warning(this, "Warning!", "Failed to create a log file!");
+        return;
+    }
+    QFile file(fileName);
+    file.open(QFile::WriteOnly);
+    QTextStream stream(&file);
+    stream << ui->textBrowser_rec->toPlainText();
+    file.close();
+    QMessageBox::information(this, "Info!", "Saved log file " + fileName);
 }
