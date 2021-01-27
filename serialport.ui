@@ -382,6 +382,61 @@
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
+         <layout class="QVBoxLayout" name="verticalLayout_8">
+          <item>
+           <widget class="QTextBrowser" name="textBrowser_rec">
+            <property name="styleSheet">
+             <string notr="true">font: 12pt &quot;Ubuntu Mono&quot;;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <widget class="QTextEdit" name="textEdit_send">
+            <property name="minimumSize">
+             <size>
+              <width>0</width>
+              <height>50</height>
+             </size>
+            </property>
+            <property name="maximumSize">
+             <size>
+              <width>16777215</width>
+              <height>120</height>
+             </size>
+            </property>
+            <property name="styleSheet">
+             <string notr="true">font: 12pt &quot;Ubuntu Mono&quot;;</string>
+            </property>
+           </widget>
+          </item>
+          <item>
+           <layout class="QHBoxLayout" name="horizontalLayout_5">
+            <item>
+             <widget class="QPushButton" name="pushButton_send">
+              <property name="text">
+               <string>send</string>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="pushButton_clear">
+              <property name="text">
+               <string>clear</string>
+              </property>
+             </widget>
+            </item>
+           </layout>
+          </item>
+         </layout>
+        </item>
+        <item>
+         <widget class="Line" name="line">
+          <property name="orientation">
+           <enum>Qt::Horizontal</enum>
+          </property>
+         </widget>
+        </item>
+        <item>
          <layout class="QHBoxLayout" name="horizontalLayout_8">
           <item>
            <widget class="QLabel" name="label_7">
@@ -453,68 +508,21 @@
           </item>
          </layout>
         </item>
-        <item>
-         <widget class="Line" name="line">
-          <property name="orientation">
-           <enum>Qt::Horizontal</enum>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <layout class="QVBoxLayout" name="verticalLayout_8">
-          <item>
-           <widget class="QTextBrowser" name="textBrowser_rec">
-            <property name="styleSheet">
-             <string notr="true">font: 12pt &quot;Ubuntu Mono&quot;;</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QTextEdit" name="textEdit_send">
-            <property name="minimumSize">
-             <size>
-              <width>0</width>
-              <height>50</height>
-             </size>
-            </property>
-            <property name="maximumSize">
-             <size>
-              <width>16777215</width>
-              <height>120</height>
-             </size>
-            </property>
-            <property name="styleSheet">
-             <string notr="true">font: 12pt &quot;Ubuntu Mono&quot;;</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_5">
-            <item>
-             <widget class="QPushButton" name="pushButton_send">
-              <property name="text">
-               <string>send</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="pushButton_clear">
-              <property name="text">
-               <string>clear</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
        </layout>
       </widget>
       <widget class="QWidget" name="draw">
        <attribute name="title">
         <string>Draw Trans</string>
        </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout"/>
+       <layout class="QVBoxLayout" name="verticalLayout">
+        <item>
+         <widget class="QLabel" name="label_10">
+          <property name="text">
+           <string>Later.</string>
+          </property>
+         </widget>
+        </item>
+       </layout>
       </widget>
      </widget>
     </item>
@@ -533,6 +541,7 @@
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionSave_Log_File"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -559,6 +568,11 @@
   <action name="actionAbout_MULTIBEANS">
    <property name="text">
     <string>About MULTIBEANS</string>
+   </property>
+  </action>
+  <action name="actionSave_Log_File">
+   <property name="text">
+    <string>Save Log File</string>
    </property>
   </action>
  </widget>

@@ -67,7 +67,7 @@
        <item>
         <widget class="QLabel" name="label_8">
          <property name="text">
-          <string>From revision v1.1(20200106)</string>
+          <string>From revision v2.0(20200106)</string>
          </property>
         </widget>
        </item>
@@ -110,7 +110,7 @@
    <item>
     <widget class="QLabel" name="label_9">
      <property name="text">
-      <string>Copyright 2014-2019 MULTIBEANS. All rights reserved.</string>
+      <string>Copyright 2014-2020 MULTIBEANS. All rights reserved.</string>
      </property>
     </widget>
    </item>
