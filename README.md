@@ -1,14 +1,25 @@
-# ubuntu下串口调试助手使用
-Tiny Serial为一个开源项目，欢迎大家使用，基于Qt开发的串口调试助手，有一般串口助手的基本功能，更多功能正在完善。
-Github地址：https://github.com/lifimlt/tinyserial
+# A GUI Serial Debug Tool for Linux
 
-# TinySerial的安装
-进入release中下载最新版本的包https://github.com/lifimlt/tinyserial/releases
-使用sudo dpkg -i安装即可
-**可能会出现以来问题，安装提示不成功使用sudo apt-get install -f**解决依赖问题。
+Welcome to use the Tiny Serial that is a GUI serial debug tool for Linux/Unix(Ubuntu etc) . Tiny Serial is a open source project based on Qt C++ framework. There are the general functions as COMMON serial port debug tool.  More new features will be developed. If you have any question and bugs found, please don't hesitate to push a new ISSUE on GitHub for us, we will deal with it at our convenient time. Thanks for your using.
 
-# TinySerial的使用
-在终端输入`tinyserial`即可启动。
-![](img/2020-01-0412:46:16.png)
+![](img/appmain.png)
 
-modify by Carlos.
+## Starting with TinySerial
+
+You can get the new latest version on the release page (https://github.com/carloscn/tinyserial/releases)
+
+For Ubuntu user, you can use the `sudo dpkg -i xxxx.deb` to finish the installation of the TinySerial. If you run into the dependency problem during the installing, please use the `sudo apt-get install -f ` to resolve it.
+
+**The other platform user need download the source code and compile the code by yourself.** 
+
+## Using the TinySerial
+
+Input `tinyserial` on your command line and input your password.
+
+Enjoy it. :) 
+
+## TODO List
+
+1. Dynamic USB devices checking
+2. Custom of serial baud rate.
+3. MAC version adapting.
