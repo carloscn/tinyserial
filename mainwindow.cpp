@@ -817,6 +817,11 @@ void MainWindow::on_timer_serial()
                 }
                 qDebug() << "ADD SERIAL PORT";
                 ui->comboBox_serialPort->addItem(newPortStringList.at(i));
+                if (isRoot == false) {
+                    qDebug() << "reset: sudo chmod 777 /dev/" + newPortNameList.at(i);
+                    terminal->start("pkexec chmod 777 /dev/" + newPortNameList.at(i));
+                    isRoot = true;
+                }
                 qDebug() << "add " << newPortStringList.at(i) << " success";
             }
         }
