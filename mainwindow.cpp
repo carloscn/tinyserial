@@ -70,6 +70,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->pushButton_open->setEnabled(true);
     ui->pushButton_scan->setEnabled(true);
     ui->pushButton_send->setEnabled(false);
+    ui->comboBox_serialPort->clear();
     ui->comboBox_baudrate->setCurrentIndex( CONFIG_BAUDRATE_115200_INDEX );
     ui->comboBox_checkdigit->setCurrentIndex( CONFIG_PARITY_NONE_INDEX );
     ui->comboBox_databits->setCurrentIndex( CONFIG_DATABITS_8_INDEX );
@@ -89,15 +90,17 @@ MainWindow::MainWindow(QWidget *parent) :
     connect( repeatSendTimer, SIGNAL(timeout()), this, SLOT(SoftAutoWriteUart()) );
     connect(serial,SIGNAL(readyRead()),this,SLOT( serialRcvData() ) );
     connect( timer_serial, SIGNAL(timeout()),SLOT(on_timer_serial()));
-    RefreshTheUSBList();
+//    RefreshTheUSBList();
     on_checkBox_dispsend_clicked(false);
     on_checkBox_disptime_clicked(false);
+    on_timer_serial();
     timer_serial->start();
 
 }
 
 MainWindow::~MainWindow()
 {
+    on_pushButton_close_clicked();
     delete ui;
 }
 
@@ -324,8 +327,10 @@ void MainWindow::on_pushButton_open_clicked()
     QString portInfo = ui->comboBox_serialPort->currentText();
     QList<QString> infoList = portInfo.split(',');
     currentConnectCom = infoList.at(0);
-    serial_port_name = infoList.at(1);
-    serial_port_name = serial_port_name.mid(0,serial_port_name.length() - 1);
+//    serial_port_name = portInfo;
+//    qDebug() << "serial_port_name" << serial_port_name;
+//    serial_port_name = serial_port_name.mid(0,serial_port_name.length() - 1);
+//    qDebug() << "serial_port_name" << serial_port_name;
     qDebug() << currentConnectCom;
     qDebug() << tr("SYSTEM: Serial port ")+portInfo+tr(" ,system is connecting with it.....");
     serial->setPortName(currentConnectCom);
@@ -368,10 +373,11 @@ void MainWindow::RefreshTheUSBList( void )
         serial->setPort(info);
         portName = info.portName();
         uartName = info.description();
-        if(!oldPortStringList.contains(portName)){
+        if(!oldPortStringList.contains(portName + "," + uartName)){
             oldPortPortNameList += portName;
+            oldPortStringList += portName + "," + uartName;
         }
-        ui->comboBox_serialPort->addItem(  portName +",(" +uartName+") "   );
+        ui->comboBox_serialPort->addItem(  portName +",(" +uartName+")"   );
         if (isRoot == false) {
             qDebug() << "reset: sudo chmod 777 /dev/" + portName;
             terminal->start("pkexec chmod 777 /dev/" + portName);
@@ -380,6 +386,8 @@ void MainWindow::RefreshTheUSBList( void )
         qDebug() << tr("SYSTEM: Scan the uart device: ")+uartName + "("+portName+")"+tr(" has been added to the available list! ");
 
     }
+    qDebug() << "#oldPortStringList: " << oldPortStringList;
+    qDebug() << "#oldPortPortNameList: " << oldPortPortNameList;
 }
 
 void MainWindow::on_pushButton_scan_clicked()
@@ -793,13 +801,14 @@ void MainWindow::on_timer_serial()
         qDebug() << "Manufacturer: " << info.manufacturer();
 #endif
         newPortNameList += info.portName();
-        newPortStringList += ("(" + info.description() + ")");
+        newPortStringList += ( info.portName() + "," + "(" + info.description() + ")");
     }
 
     //更新旧的串口列表
+//    qDebug() << "UPDATE SERIAL PORT";
     if(newPortNameList != oldPortPortNameList)
     {
-        qDebug() << "UPDATE SERIAL PORT";
+
         for (int i = 0; i < newPortNameList.length(); ++i) {
             if(newPortNameList.length() > 0){
                 if(oldPortPortNameList.contains(newPortNameList.at(i))){
@@ -807,7 +816,8 @@ void MainWindow::on_timer_serial()
                     continue;
                 }
                 qDebug() << "ADD SERIAL PORT";
-                ui->comboBox_serialPort->addItem( newPortNameList.at(i) + "," + newPortStringList.at(i));
+                ui->comboBox_serialPort->addItem(newPortStringList.at(i));
+                qDebug() << "add " << newPortStringList.at(i) << " success";
             }
         }
         if(newPortNameList.length() < oldPortPortNameList.length()){
@@ -815,33 +825,32 @@ void MainWindow::on_timer_serial()
             qDebug() << "DELELE SERIAL PORT";
             for (int i = 0; i < oldPortPortNameList.length();i++) {
                 if(newPortNameList.contains(oldPortPortNameList.at(i))){
+                    qDebug() << "continue " << i;
                     continue;
                 } else {
-                    // waiting here !!!!!!!!!!!
+                    serial_port_name = ui->comboBox_serialPort->currentText();
+                    qDebug() << "-----------------------------------";
                     qDebug() << "newPortStringList" << newPortStringList;
                     qDebug() << "serial_port_name" << serial_port_name;
-                    if (!newPortNameList.contains(serial_port_name)) {//检测拔掉的串口是否为正在使用的串口
-                        serial->close();
-                        ui->pushButton_close->setEnabled(false);
-                        ui->comboBox_serialPort->setEnabled(true);
-                        ui->pushButton_open->setEnabled(true);
-                        ui->pushButton_scan->setEnabled(true);
+                    qDebug() << "-----------------------------------";
+                    if (!newPortStringList.contains(serial_port_name) && !ui->pushButton_open->isEnabled()) {//检测拔掉的串口是否为正在使用的串口
+                        on_pushButton_close_clicked();
+                        ui->comboBox_serialPort->removeItem(ui->comboBox_serialPort->findText(serial_port_name));
                         qDebug() << "Serial Port is using but it be unpluged!";
+                        qDebug() << "delete " << serial_port_name << " success";
+                    } else {
+                        ui->comboBox_serialPort->removeItem(ui->comboBox_serialPort->findText(oldPortStringList.at(i)));
+                        qDebug() << "delete " << oldPortStringList.at(i) << " success";
                     }
-                    ui->comboBox_serialPort->removeItem(ui->comboBox_serialPort->findText(oldPortPortNameList.at(i) + "," + oldPortStringList.at(i)));
-                    qDebug() << "delete " << oldPortPortNameList.at(i) + "," + oldPortStringList.at(i) << " success";
                 }
             }
         }
+        // update
         oldPortStringList = newPortStringList;
         oldPortPortNameList = newPortNameList;
-        qDebug() << "newPortStringList" << newPortStringList;
-        qDebug() << "oldPortStringList" << oldPortStringList;
-        qDebug() << oldPortPortNameList;
-        //            emit onNewSerialPort(oldPortStringList);
+//        qDebug() << "newPortStringList" << newPortStringList;
+//        qDebug() << "oldPortStringList" << oldPortStringList;
+//        qDebug() << oldPortPortNameList;
     }
-    //    int number = ui->comboBox_serialPort->findText("USB-Serial Controller D",Qt::MatchContains);
-    //    qDebug() << "number" << number;
-    //    ui->comboBox_serialPort->setCurrentIndex(number);
 }
 
