@@ -107,6 +107,8 @@ private slots:
 
     void on_actionSave_Log_File_triggered();
 
+    void on_comboBox_serialPort_currentIndexChanged(const QString &arg1);
+
 private:
     Ui::SerialPort *ui;
     AboutDialog *aboutDialog;
