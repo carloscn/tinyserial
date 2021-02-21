@@ -65,8 +65,6 @@ private slots:
 
     void serialRcvData();
 
-    void on_timer_serial();
-
     void on_pushButton_close_clicked();
 
     void on_comboBox_baudrate_currentIndexChanged(int index);

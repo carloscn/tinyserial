@@ -50,7 +50,6 @@ MainWindow::MainWindow(QWidget *parent) :
     terminal(new QProcess),
     serial(new QSerialPort),
     repeatSendTimer(new QTimer),
-    timer_serial(new QTimer),
     ui(new Ui::SerialPort)
 {
     ui->setupUi(this);
@@ -84,17 +83,13 @@ MainWindow::MainWindow(QWidget *parent) :
     }else{
         repeatSendTimer->stop();
     }
-    timer_serial->setInterval(1000);
     /*Theme init*/
     //initQssStyleSheet();
     connect( repeatSendTimer, SIGNAL(timeout()), this, SLOT(SoftAutoWriteUart()) );
     connect(serial,SIGNAL(readyRead()),this,SLOT( serialRcvData() ) );
-    connect( timer_serial, SIGNAL(timeout()),SLOT(on_timer_serial()));
-//    RefreshTheUSBList();
+    RefreshTheUSBList();
     on_checkBox_dispsend_clicked(false);
     on_checkBox_disptime_clicked(false);
-    on_timer_serial();
-    timer_serial->start();
 
 }
 
@@ -787,75 +782,4 @@ void MainWindow::on_actionSave_Log_File_triggered()
     QMessageBox::information(this, "Info!", "Saved log file " + fileName);
 }
 
-void MainWindow::on_timer_serial()
-{
-    QStringList newPortStringList;
-    QStringList newPortNameList;
-    QSerialPortInfo info;
-    //搜索串口
-
-    foreach (info, QSerialPortInfo::availablePorts()){
-#if 0
-        qDebug() << "Name        : " << info.portName();
-        qDebug() << "Description : " << info.description();
-        qDebug() << "Manufacturer: " << info.manufacturer();
-#endif
-        newPortNameList += info.portName();
-        newPortStringList += ( info.portName() + "," + "(" + info.description() + ")");
-    }
-
-    //更新旧的串口列表
-//    qDebug() << "UPDATE SERIAL PORT";
-    if(newPortNameList != oldPortPortNameList)
-    {
-
-        for (int i = 0; i < newPortNameList.length(); ++i) {
-            if(newPortNameList.length() > 0){
-                if(oldPortPortNameList.contains(newPortNameList.at(i))){
-                    // add:skip when same
-                    continue;
-                }
-                qDebug() << "ADD SERIAL PORT";
-                ui->comboBox_serialPort->addItem(newPortStringList.at(i));
-                if (isRoot == false) {
-                    qDebug() << "reset: sudo chmod 777 /dev/" + newPortNameList.at(i);
-                    terminal->start("pkexec chmod 777 /dev/" + newPortNameList.at(i));
-                    isRoot = true;
-                }
-                qDebug() << "add " << newPortStringList.at(i) << " success";
-            }
-        }
-        if(newPortNameList.length() < oldPortPortNameList.length()){
-            // delete: delete the unplug serial port
-            qDebug() << "DELELE SERIAL PORT";
-            for (int i = 0; i < oldPortPortNameList.length();i++) {
-                if(newPortNameList.contains(oldPortPortNameList.at(i))){
-                    qDebug() << "continue " << i;
-                    continue;
-                } else {
-                    serial_port_name = ui->comboBox_serialPort->currentText();
-                    qDebug() << "-----------------------------------";
-                    qDebug() << "newPortStringList" << newPortStringList;
-                    qDebug() << "serial_port_name" << serial_port_name;
-                    qDebug() << "-----------------------------------";
-                    if (!newPortStringList.contains(serial_port_name) && !ui->pushButton_open->isEnabled()) {//检测拔掉的串口是否为正在使用的串口
-                        on_pushButton_close_clicked();
-                        ui->comboBox_serialPort->removeItem(ui->comboBox_serialPort->findText(serial_port_name));
-                        qDebug() << "Serial Port is using but it be unpluged!";
-                        qDebug() << "delete " << serial_port_name << " success";
-                    } else {
-                        ui->comboBox_serialPort->removeItem(ui->comboBox_serialPort->findText(oldPortStringList.at(i)));
-                        qDebug() << "delete " << oldPortStringList.at(i) << " success";
-                    }
-                }
-            }
-        }
-        // update
-        oldPortStringList = newPortStringList;
-        oldPortPortNameList = newPortNameList;
-//        qDebug() << "newPortStringList" << newPortStringList;
-//        qDebug() << "oldPortStringList" << oldPortStringList;
-//        qDebug() << oldPortPortNameList;
-    }
-}
 
