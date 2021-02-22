@@ -63,6 +63,7 @@ MainWindow::MainWindow(QWidget *parent) :
     recCount = 0;
     sendCount = 0;
     isRoot = false;
+    validator_combox_baudrate = nullptr;
 
     /*UI init*/
     ui->pushButton_close->setEnabled(false);
@@ -96,6 +97,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    on_pushButton_close_clicked();
+    if(validator_combox_baudrate != nullptr){
+        delete validator_combox_baudrate;
+        validator_combox_baudrate = nullptr;
+        qDebug() << "delete validator befor exit";
+    }
     delete ui;
 }
 
@@ -400,6 +407,13 @@ void MainWindow::on_pushButton_close_clicked()
 
 void MainWindow::on_comboBox_baudrate_currentIndexChanged(int index)
 {
+    ui->comboBox_baudrate->setEditable(false);
+    if(validator_combox_baudrate != nullptr){
+        delete validator_combox_baudrate;
+        validator_combox_baudrate = nullptr;
+        qDebug() << "delete and clear validator";
+    }
+
     switch(index) {
     case CONFIG_BAUDRATE_1200_INDEX:
         serial->setBaudRate(QSerialPort::Baud1200);
@@ -439,6 +453,14 @@ void MainWindow::on_comboBox_baudrate_currentIndexChanged(int index)
     case CONFIG_BAUDRATE_115200_INDEX:
         serial->setBaudRate(QSerialPort::Baud115200);
         qDebug() << "Baud Rate: 115200; ";
+        break;
+    case CONFIG_BAUDRATE_CUSTOM_INDEX:
+        ui->comboBox_baudrate->setEditable(true);
+        ui->comboBox_baudrate->setCurrentText("");
+        QRegExp regx("[0-9]{7}");
+        validator_combox_baudrate = new QRegExpValidator(regx, ui->comboBox_baudrate);
+        ui->comboBox_baudrate->setValidator(validator_combox_baudrate);
+        qDebug() << "validator";
         break;
     }
 
@@ -748,10 +770,10 @@ void MainWindow::on_actionSave_Log_File_triggered()
         return;
     }
     QString fileName = QFileDialog::getSaveFileName(
-        this,
-        tr("save as a log file."),
-        NULL,
-        tr("All files(*.*)"));
+                this,
+                tr("save as a log file."),
+                NULL,
+                tr("All files(*.*)"));
     if (fileName.isEmpty()) {
         QMessageBox::warning(this, "Warning!", "Failed to create a log file!");
         return;
@@ -767,4 +789,12 @@ void MainWindow::on_actionSave_Log_File_triggered()
 void MainWindow::on_comboBox_serialPort_currentIndexChanged(const QString &arg1)
 {
     ui->comboBox_serialPort->setToolTip(arg1);
+}
+
+
+void MainWindow::on_comboBox_baudrate_editTextChanged(const QString &arg1)
+{
+    qint32 baud_rate = arg1.toInt();
+    serial->setBaudRate(baud_rate);
+    qDebug() << "Baud Rate: " << baud_rate;
 }
