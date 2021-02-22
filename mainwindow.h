@@ -36,6 +36,8 @@
 #include <QDateTime>
 #include <QScrollBar>
 #include <QFileDialog>
+#include <QRegExp>
+#include <QValidator>
 #include "aboutdialog.h"
 
 namespace Ui {
@@ -109,6 +111,8 @@ private slots:
 
     void on_comboBox_serialPort_currentIndexChanged(const QString &arg1);
 
+    void on_comboBox_baudrate_editTextChanged(const QString &arg1);
+
 private:
     Ui::SerialPort *ui;
     AboutDialog *aboutDialog;
@@ -117,6 +121,7 @@ private:
     QSerialPort *serial;
     QString currentConnectCom;
     QByteArray globalRecvData;
+    QValidator *validator_combox_baudrate;
 
     bool isRoot;
     bool isShowSend;
