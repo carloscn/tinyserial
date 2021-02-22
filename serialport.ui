@@ -126,11 +126,6 @@
                <string>115200</string>
               </property>
              </item>
-             <item>
-              <property name="text">
-               <string>Custom</string>
-              </property>
-             </item>
             </widget>
            </item>
            <item row="2" column="0">
@@ -647,7 +642,7 @@
      <x>0</x>
      <y>0</y>
      <width>1082</width>
-     <height>26</height>
+     <height>24</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFIle">

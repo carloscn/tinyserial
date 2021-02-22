@@ -29,7 +29,6 @@
 #define                     CONFIG_BAUDRATE_38400_INDEX            5
 #define                     CONFIG_BAUDRATE_57600_INDEX            6
 #define                     CONFIG_BAUDRATE_115200_INDEX           7
-#define                     CONFIG_BAUDRATE_CUSTOM_INDEX           8
 
 #define                     CONFIG_STOPBIT_ONE_INDEX               0
 #define                     CONFIG_STOPBIT_ONEANDHALF_INDEX        1
