@@ -54,7 +54,7 @@ MainWindow::MainWindow(QWidget *parent) :
 {
     ui->setupUi(this);
     setWindowTitle("tinySerial " + VERISON);
-
+    validator_combox_baudrate = nullptr;
     /*Send ASCII Format*/
     sendAsciiFormat = true;
     recAsciiFormat = true;
@@ -69,6 +69,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->pushButton_open->setEnabled(true);
     ui->pushButton_scan->setEnabled(true);
     ui->pushButton_send->setEnabled(false);
+    ui->comboBox_serialPort->clear();
     ui->comboBox_baudrate->setCurrentIndex( CONFIG_BAUDRATE_115200_INDEX );
     ui->comboBox_checkdigit->setCurrentIndex( CONFIG_PARITY_NONE_INDEX );
     ui->comboBox_databits->setCurrentIndex( CONFIG_DATABITS_8_INDEX );
@@ -82,7 +83,6 @@ MainWindow::MainWindow(QWidget *parent) :
     }else{
         repeatSendTimer->stop();
     }
-
     /*Theme init*/
     //initQssStyleSheet();
     connect( repeatSendTimer, SIGNAL(timeout()), this, SLOT(SoftAutoWriteUart()) );
@@ -90,10 +90,12 @@ MainWindow::MainWindow(QWidget *parent) :
     RefreshTheUSBList();
     on_checkBox_dispsend_clicked(false);
     on_checkBox_disptime_clicked(false);
+
 }
 
 MainWindow::~MainWindow()
 {
+    on_pushButton_close_clicked();
     delete ui;
 }
 
@@ -320,6 +322,10 @@ void MainWindow::on_pushButton_open_clicked()
     QString portInfo = ui->comboBox_serialPort->currentText();
     QList<QString> infoList = portInfo.split(',');
     currentConnectCom = infoList.at(0);
+//    serial_port_name = portInfo;
+//    qDebug() << "serial_port_name" << serial_port_name;
+//    serial_port_name = serial_port_name.mid(0,serial_port_name.length() - 1);
+//    qDebug() << "serial_port_name" << serial_port_name;
     qDebug() << currentConnectCom;
     qDebug() << tr("SYSTEM: Serial port ")+portInfo+tr(" ,system is connecting with it.....");
     serial->setPortName(currentConnectCom);
@@ -362,7 +368,11 @@ void MainWindow::RefreshTheUSBList( void )
         serial->setPort(info);
         portName = info.portName();
         uartName = info.description();
-        ui->comboBox_serialPort->addItem(  portName +",(" +uartName+") "   );
+        if(!oldPortStringList.contains(portName + "," + uartName)){
+            oldPortPortNameList += portName;
+            oldPortStringList += portName + "," + uartName;
+        }
+        ui->comboBox_serialPort->addItem(  portName +",(" +uartName+")"   );
         if (isRoot == false) {
             qDebug() << "reset: sudo chmod 777 /dev/" + portName;
             terminal->start("pkexec chmod 777 /dev/" + portName);
@@ -371,6 +381,8 @@ void MainWindow::RefreshTheUSBList( void )
         qDebug() << tr("SYSTEM: Scan the uart device: ")+uartName + "("+portName+")"+tr(" has been added to the available list! ");
 
     }
+    qDebug() << "#oldPortStringList: " << oldPortStringList;
+    qDebug() << "#oldPortPortNameList: " << oldPortPortNameList;
 }
 
 void MainWindow::on_pushButton_scan_clicked()
@@ -394,6 +406,14 @@ void MainWindow::on_pushButton_close_clicked()
 
 void MainWindow::on_comboBox_baudrate_currentIndexChanged(int index)
 {
+
+    ui->comboBox_baudrate->setEditable(false);
+    if(validator_combox_baudrate != nullptr){
+        delete validator_combox_baudrate;
+        validator_combox_baudrate = nullptr;
+        qDebug() << "delete and clear validator";
+    }
+
     switch( index ) {
     case CONFIG_BAUDRATE_1200_INDEX:
         serial->setBaudRate(QSerialPort::Baud1200);
@@ -427,8 +447,22 @@ void MainWindow::on_comboBox_baudrate_currentIndexChanged(int index)
         serial->setBaudRate(QSerialPort::Baud115200);
         qDebug() << "Baud Rate: 115200; ";
         break;
+    case CONFIG_BAUDRATE_CUSTOM_INDEX:
+        ui->comboBox_baudrate->setEditable(true);
+        ui->comboBox_baudrate->setCurrentText("");
+        QRegExp regx("[0-9]{7}");
+        validator_combox_baudrate = new QRegExpValidator(regx, ui->comboBox_baudrate);
+        ui->comboBox_baudrate->setValidator(validator_combox_baudrate);
+        qDebug() << "validator";
+        break;
     }
+}
 
+void MainWindow::on_comboBox_baudrate_currentTextChanged(const QString &arg1)
+{
+    qint32 baud_rate = arg1.toInt();
+    serial->setBaudRate(baud_rate);
+    qDebug() << "Baud Rate: " << baud_rate;
 }
 
 void MainWindow::on_comboBox_stopbits_currentIndexChanged(int index)
@@ -732,10 +766,10 @@ void MainWindow::on_actionSave_Log_File_triggered()
         return;
     }
     QString fileName = QFileDialog::getSaveFileName(
-        this,
-        tr("save as a log file."),
-        NULL,
-        tr("All files(*.*)"));
+                this,
+                tr("save as a log file."),
+                NULL,
+                tr("All files(*.*)"));
     if (fileName.isEmpty()) {
         QMessageBox::warning(this, "Warning!", "Failed to create a log file!");
         return;
@@ -747,3 +781,5 @@ void MainWindow::on_actionSave_Log_File_triggered()
     file.close();
     QMessageBox::information(this, "Info!", "Saved log file " + fileName);
 }
+
+
