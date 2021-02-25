@@ -97,6 +97,12 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    on_pushButton_close_clicked();
+    if(validator_combox_baudrate != nullptr){
+        delete validator_combox_baudrate;
+        validator_combox_baudrate = nullptr;
+        qDebug() << "delete validator befor exit";
+    }
     delete ui;
 }
 
