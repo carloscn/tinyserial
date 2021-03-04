@@ -7,7 +7,7 @@
     <x>0</x>
     <y>0</y>
     <width>493</width>
-    <height>271</height>
+    <height>275</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -67,14 +67,14 @@
        <item>
         <widget class="QLabel" name="label_8">
          <property name="text">
-          <string>From revision v2.0(20200106)</string>
+          <string>From revision v1.3(20210304)</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QLabel" name="label_5">
          <property name="text">
-          <string>Base on Qt 5.10.0 (gcc)</string>
+          <string>Base on Qt 5.9.9 (gcc)</string>
          </property>
         </widget>
        </item>
@@ -110,7 +110,7 @@
    <item>
     <widget class="QLabel" name="label_9">
      <property name="text">
-      <string>Copyright 2014-2020 MULTIBEANS. All rights reserved.</string>
+      <string>Copyright 2014-2021 MULTIBEANS. All rights reserved.</string>
      </property>
     </widget>
    </item>

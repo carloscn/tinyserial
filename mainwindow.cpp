@@ -43,7 +43,7 @@
 #include "mainwindow.h"
 #include "ui_serialport.h"
 
-#define     VERISON         tr("v2.0")
+#define     VERISON         tr("v1.3")
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
