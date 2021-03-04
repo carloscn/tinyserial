@@ -19,7 +19,7 @@ ln -s $setup_path/tinyserial /usr/bin/tinyserial
 
 chmod 777 /usr/bin/tinyserial
 chmod 777 $setup_path/tinyserial.desktop
-cp $setup_path/tinyserial.desktop /usr/share/applications/
+cp -r $setup_path/tinyserial.desktop /usr/share/applications/
 rm -rf /tinyserial
 
 echo "set QT_PLUGIN_PATH in file .profile"
