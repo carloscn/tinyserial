@@ -26,3 +26,6 @@ Enjoy it. :)
 1. Dynamic USB devices checking
 2. Custom of serial baud rate.
 3. MAC version adapting.
+
+## Note
+The tinyNetwork tool is linked to https://github.com/carloscn/tinyNetwork
