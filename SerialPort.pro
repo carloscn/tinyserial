@@ -4,11 +4,12 @@
 #
 #-------------------------------------------------
 
-QT       += core gui
-QT  += serialport
-QT += printsupport
+QT += core gui serialport
+
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
+#QMAKE_LFLAGS += -static
+QMAKE_CXXFLAGS += "-fno-sized-deallocation"
 TARGET = tinyserial
 TEMPLATE = app
 
