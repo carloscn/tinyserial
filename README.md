@@ -18,6 +18,8 @@ For Ubuntu user, you can use the `sudo dpkg -i xxxx.deb` to finish the installat
 ## Using the TinySerial
 
 Input `tinyserial` on your command line and input your password.
+or
+You can find ELF binary on `/opt/tinyserial`
 
 Enjoy it. :) 
 
