@@ -3,6 +3,6 @@ Version:1.4
 Section:utils
 Priority:extra
 Maintainer:Carlos Wei (carlos.wei.hk@gmail.com)
-Depends:libqt5widgets5,libqt5gui5,libqt5core5a,libqt5x11extras5,libqt5x11extras5-dev,libqt5serialport5,libqt5dbus5,libqt5network5,libqt5svg5
+Depends:libqt5widgets5, libqt5gui5, libqt5core5a, libqt5x11extras5, libqt5x11extras5-dev, libqt5serialport5, libqt5dbus5, libqt5network5, libqt5svg5, libc6, libgcc1, libstdc++6, libpthread-stubs0-dev, libgl1, zlib1g, libicu-dev, libglib2.0-0, libglvnd0, libglx0, libpcre3, libx11-6, libxcb1, libxau6, libxdmcp6, libbsd0
 Architecture:amd64
 Description: tinySerial is a opensource GUI serial port debug software on Linux.
