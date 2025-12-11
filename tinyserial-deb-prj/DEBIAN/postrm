@@ -1,9 +1,35 @@
+#!/bin/bash
+set -e
 
-echo "Start to remove"
-rm -rf  /usr/share/applications/tinyserial.desktop
-rm -rf  /usr/share/pixmaps/tinyserial.png
-rm -rf  /usr/bin/tinyserial
-rm -rf  /usr/bin/tinyserial
-rm -rf /opt/tinyserial
-rm -rf /var/lib/dpkg/info/tinyserial*
-echo "Remove finished!"
+echo "Removing TinySerial..."
+
+# Remove desktop file
+if [ -f "/usr/share/applications/tinyserial.desktop" ]; then
+    rm -f "/usr/share/applications/tinyserial.desktop"
+    # Update desktop database
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database "/usr/share/applications" 2>/dev/null || true
+    fi
+fi
+
+# Remove icon
+if [ -f "/usr/share/pixmaps/tinyserial.png" ]; then
+    rm -f "/usr/share/pixmaps/tinyserial.png"
+fi
+
+# Remove symlink
+if [ -L "/usr/bin/tinyserial" ] || [ -f "/usr/bin/tinyserial" ]; then
+    rm -f "/usr/bin/tinyserial"
+fi
+
+# Remove installation directory
+if [ -d "/opt/tinyserial" ]; then
+    rm -rf "/opt/tinyserial"
+fi
+
+# Clean up package info (if needed)
+if [ -d "/var/lib/dpkg/info" ]; then
+    rm -f /var/lib/dpkg/info/tinyserial.* 2>/dev/null || true
+fi
+
+echo "TinySerial removal completed!"

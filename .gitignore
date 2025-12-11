@@ -1,1 +1,4 @@
 SerialPort.pro.*
+.vscode
+.vscode/*
+build

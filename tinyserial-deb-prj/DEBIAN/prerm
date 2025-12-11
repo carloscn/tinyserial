@@ -1,0 +1,7 @@
+#!/bin/bash
+set -e
+
+# Pre-removal script
+# This script runs before package removal
+
+echo "Preparing to remove TinySerial..."

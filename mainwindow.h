@@ -1,20 +1,22 @@
-// Qt for Linux   Project.                                             GitLab
+// Qt Cross-platform Project.                                             GitHub
 /****************************************************************************/
 /*                                                                          */
-/*  @file       : serialport.h                  	                        */
-/*  @Copyright  : MULTIBEANS ORG rights reserved.                           */
-/*  @Revision   : Ver 1.0.                                                  */
-/*  @Data       : 2017.09.16 Realse.                                        */
+/*  @file       : mainwindow.h                                              */
+/*  @Copyright  : MULTIBEANS ORG rights reserved.                          */
+/*  @Revision   : Ver 1.5.                                                  */
+/*  @Data       : 2025.12.11 Optimized.                                     */
 /*  @Belong     : PROJECT.                                                  */
-/*  @Git        : https://gitlab.com/coarlqq/serialPort.git                 */
-/*  **code : (UTF-8) in Linux(Ubuntu16.04). Qt 5.7.1 for Linux platform.    */
+/*  @Git        : https://github.com/carloscn/tinyserial.git                */
+/*  @Platform   : Cross-platform. Qt 5.15+ for Windows/Linux platform.   */
+/*  @Encoding   : UTF-8                                                     */
 /****************************************************************************/
 /*  @Attention:                                                             */
 /*  ---------------------------------------------------------------------   */
 /*  |    Data    |  Behavior |     Offer      |          Content         |  */
-/*  | 2017.09.16 |   create  |Carlos Lopez(M) | ceate the document.      |  */
+/*  | 2017.09.16 |   create  | Carlos Wei (M) | create the document.     |  */
+/*  | 2025.12.11 |   optimize| Carlos Wei (M) | Code refactoring & fix.  |  */
 /*  ---------------------------------------------------------------------   */
-/*  Email: carlos@mltbns.top                                  MULTIBEANS.   */
+/*  Email: carlos.wei.hk@gmail.com                              MULTIBEANS.*/
 /****************************************************************************/
 
 #ifndef SERIALPORT_H
@@ -94,9 +96,6 @@ private slots:
 
     void on_comboBox_databits_currentIndexChanged(int index);
 
-    void on_checkBox_enableDraw_clicked(bool checked);
-
-
     void on_pushButton_pause_clicked();
 
     void on_actionAbout_TinySerialPort_triggered();
@@ -114,6 +113,7 @@ private slots:
     void on_comboBox_baudrate_editTextChanged(const QString &arg1);
 
 private:
+    static constexpr int DEFAULT_REPEAT_INTERVAL_MS = 1000;
     Ui::SerialPort *ui;
     AboutDialog *aboutDialog;
     QTimer *repeatSendTimer;
@@ -129,17 +129,24 @@ private:
     bool recAsciiFormat;
     bool sendAsciiFormat;
     bool repeatSend;
-    bool enableDrawFunction;
     bool pauseComOutput;
 
-    void RefreshTheUSBList( void );
+    void RefreshTheUSBList();
 
+    // Helper functions for code reuse
+    void configureSerialPort();
+    void setBaudRate(int index);
+    void setStopBits(int index);
+    void setParity(int index);
+    void setDataBits(int index);
+    void setFlowControl(int index);
+    QString formatReceiveData(const QByteArray &data, bool isAscii);
+    QString formatSendData(const QString &input, bool isAscii);
+    void sendData(const QString &input, bool showInDisplay = true);
 
     QByteArray statusBarComInfo;
     quint64 recCount;
     quint64 sendCount;
-
-
 };
 
 #endif // SERIALPORT_H

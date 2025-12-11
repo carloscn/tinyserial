@@ -1,27 +1,66 @@
+#!/bin/bash
+set -e
 
-echo "Start to install"
+echo "Installing TinySerial..."
 
-setup_path="/opt/tinyserial"
+# Installation paths
+INSTALL_DIR="/opt/tinyserial"
+BIN_LINK="/usr/bin/tinyserial"
+DESKTOP_DIR="/usr/share/applications"
+ICON_DIR="/usr/share/pixmaps"
 
-if [ ! -x "$setup_path" ]; then
-    mkdir "$setup_path"
+# Create installation directory
+if [ ! -d "$INSTALL_DIR" ]; then
+    mkdir -p "$INSTALL_DIR"
 fi
 
-cp -ri /tinyserial/application/tinyserial/tinyserial/* $setup_path
-cp -ri /tinyserial/application/lib/* $setup_path
-cp -ri /tinyserial/application/lib/tinyserial.png /usr/share/pixmaps/
-if [ ! -f /usr/bin/tinyserial ]; then
-    echo "old tinyserial has exist."
-    echo "delete the old tinyserial app."
-    rm -rf /usr/bin/tinyserial
+# Copy application files
+# Note: $D is the root directory of the installed package
+if [ -d "$D/opt/tinyserial" ]; then
+    cp -r "$D/opt/tinyserial"/* "$INSTALL_DIR/" 2>/dev/null || true
 fi
-ln -s $setup_path/tinyserial /usr/bin/tinyserial
 
-chmod 777 /usr/bin/tinyserial
-chmod 777 $setup_path/tinyserial.desktop
-cp -r $setup_path/tinyserial.desktop /usr/share/applications/
-rm -rf /tinyserial
+# Copy from package structure if using old layout
+if [ -d "$D/tinyserial/application/tinyserial/tinyserial" ]; then
+    cp -r "$D/tinyserial/application/tinyserial/tinyserial"/* "$INSTALL_DIR/" 2>/dev/null || true
+    cp -r "$D/tinyserial/application/lib"/* "$INSTALL_DIR/" 2>/dev/null || true
+fi
 
-echo "set QT_PLUGIN_PATH in file .profile"
-echo "QT_PLUGIN_PATH=/usr/lib/x86_64-linux-gnu/qt5/plugins" >> ~/.profile
-echo "Install ok"
+# Set proper permissions
+chmod 755 "$INSTALL_DIR"
+if [ -f "$INSTALL_DIR/tinyserial" ]; then
+    chmod 755 "$INSTALL_DIR/tinyserial"
+fi
+
+# Install desktop file
+if [ -f "$INSTALL_DIR/tinyserial.desktop" ]; then
+    cp "$INSTALL_DIR/tinyserial.desktop" "$DESKTOP_DIR/"
+    chmod 644 "$DESKTOP_DIR/tinyserial.desktop"
+    # Update desktop database
+    if command -v update-desktop-database >/dev/null 2>&1; then
+        update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
+    fi
+fi
+
+# Install icon
+if [ -f "$INSTALL_DIR/tinyserial.png" ]; then
+    cp "$INSTALL_DIR/tinyserial.png" "$ICON_DIR/"
+    chmod 644 "$ICON_DIR/tinyserial.png"
+fi
+
+# Create symlink for command line access
+if [ -f "$INSTALL_DIR/tinyserial" ]; then
+    if [ -L "$BIN_LINK" ] || [ -f "$BIN_LINK" ]; then
+        rm -f "$BIN_LINK"
+    fi
+    ln -s "$INSTALL_DIR/tinyserial" "$BIN_LINK"
+    chmod 755 "$BIN_LINK"
+fi
+
+# Clean up temporary files if any
+if [ -d "$D/tinyserial" ]; then
+    rm -rf "$D/tinyserial" 2>/dev/null || true
+fi
+
+echo "TinySerial installation completed successfully!"
+echo "You can now run 'tinyserial' from the command line or find it in your applications menu."

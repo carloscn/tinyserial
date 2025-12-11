@@ -1,8 +1,35 @@
-Package:tinyserial
-Version:1.4
-Section:utils
-Priority:extra
-Maintainer:Carlos Wei (carlos.wei.hk@gmail.com)
-Depends:libqt5widgets5, libqt5gui5, libqt5core5a, libqt5x11extras5, libqt5x11extras5-dev, libqt5serialport5, libqt5dbus5, libqt5network5, libqt5svg5, libc6, libgcc1, libstdc++6, libpthread-stubs0-dev, libgl1, zlib1g, libicu-dev, libglib2.0-0, libglvnd0, libglx0, libpcre3, libx11-6, libxcb1, libxau6, libxdmcp6, libbsd0
-Architecture:amd64
-Description: tinySerial is a opensource GUI serial port debug software on Linux.
+Package: tinyserial
+Version: 1.5
+Section: utils
+Priority: optional
+Architecture: amd64
+Depends: libqt5widgets5 (>= 5.5.0),
+         libqt5gui5 (>= 5.5.0),
+         libqt5core5a (>= 5.5.0),
+         libqt5serialport5 (>= 5.5.0),
+         libqt5dbus5 (>= 5.5.0),
+         libc6 (>= 2.17),
+         libgcc1 (>= 1:4.1.1),
+         libstdc++6 (>= 4.8.1),
+         libgl1,
+         zlib1g (>= 1:1.1.4),
+         libglib2.0-0 (>= 2.40.0),
+         libx11-6,
+         libxcb1,
+         libxau6,
+         libxdmcp6
+Recommends: libqt5svg5
+Maintainer: Carlos Wei <carlos.wei.hk@gmail.com>
+Homepage: https://github.com/carloscn/tinyserial
+Description: TinySerial - GUI serial port debug tool for Linux
+ TinySerial is an open source GUI serial port debug software for Linux.
+ It provides a user-friendly interface for serial communication debugging
+ and testing. Based on Qt5 framework, it supports both ASCII and HEX
+ data transmission modes.
+ .
+ Features:
+  - Serial port scanning and connection
+  - ASCII and HEX data format support
+  - Automatic repeat sending
+  - Data logging and saving
+  - Cross-platform support (Linux/Windows)
