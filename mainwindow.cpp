@@ -72,7 +72,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->pushButton_close->setEnabled(false);
     ui->pushButton_open->setEnabled(true);
     ui->pushButton_scan->setEnabled(true);
-    ui->pushButton_send->setEnabled(false);
+    ui->pushButton_send->setEnabled(true);
     ui->comboBox_baudrate->setCurrentIndex(CONFIG_BAUDRATE_115200_INDEX);
     ui->comboBox_checkdigit->setCurrentIndex(CONFIG_PARITY_NONE_INDEX);
     ui->comboBox_databits->setCurrentIndex(CONFIG_DATABITS_8_INDEX);
@@ -344,37 +344,7 @@ void MainWindow::on_pushButton_send_clicked()
     sendData(input, true);
 }
 
-void MainWindow::StringToHex(QString str, QByteArray &senddata)
-{
-    int hexdata,lowhexdata;
-    int hexdatalen = 0;
-    int len = str.length();
-    senddata.resize(len/2);
-    char lstr,hstr;
 
-    for(int i=0; i<len;) {
-        //char lstr,
-        hstr = str[i].toLatin1();
-        if (hstr == ' ') {
-            i++;
-            continue;
-        }
-        i++ ;
-        if (i >= len)
-            break;
-        lstr = str[i].toLatin1();
-        hexdata = ConvertHexChar(hstr);
-        lowhexdata = ConvertHexChar(lstr);
-        if ((hexdata == 16) || (lowhexdata == 16))
-            break;
-        else
-            hexdata = hexdata*16+lowhexdata;
-        i++;
-        senddata[hexdatalen] = (char)hexdata;
-        hexdatalen++;
-    }
-    senddata.resize(hexdatalen);
-}
 
 char MainWindow::ConvertHexChar(char ch)
 {
@@ -661,9 +631,15 @@ QString MainWindow::formatSendData(const QString &input, bool isAscii)
     if (isAscii) {
         str = input;
     } else {
-        QByteArray temp;
-        StringToHex(input, temp);
-        str = temp.toHex(' ').toUpper();  // Add space between hex bytes and uppercase
+        QString tmp = input;
+        tmp.remove(QRegExp("\\s"));
+        if (tmp.length() % 2 != 0) {
+            tmp.insert(0, '0');
+        }
+
+        QByteArray temp = QByteArray::fromHex(tmp.toLatin1());
+
+        str = temp.toHex(' ').toUpper();
     }
 
     if (isShowSend) {
@@ -687,8 +663,18 @@ void MainWindow::sendData(const QString &input, bool showInDisplay)
         dataToSend = input.toLatin1();
         qDebug() << "UART SendAscii :" << dataToSend;
     } else {
-        StringToHex(input, dataToSend);
-        qDebug() << "UART SendHex :" << dataToSend.toHex(' ');
+        // === FIX: Robust HEX conversion logic ===
+        QString tmp = input;
+
+        tmp.remove(QRegExp("\\s"));
+
+        if (tmp.length() % 2 != 0) {
+            tmp.insert(0, '0');
+        }
+
+        dataToSend = QByteArray::fromHex(tmp.toLatin1());
+
+        qDebug() << "UART SendAscii :" << dataToSend.toHex(' ').toUpper();
     }
 
     if (serial->isOpen()) {

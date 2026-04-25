@@ -54,7 +54,6 @@ public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
 
-    void StringToHex(QString str, QByteArray &senddata);
     char ConvertHexChar(char ch);
     void initQssStyleSheet();
     long xcount;
