@@ -135,7 +135,7 @@ cd tinyserial
 
 ### Basic Operations
 
-1. **Scan for Serial Ports**: Click the "Scan" button to detect available serial ports
+1. **Scan for Serial Ports**: The list updates when a USB serial device is plugged or unplugged. Scan refreshes it immediately.
 2. **Configure Port Settings**: Select baud rate, data bits, stop bits, parity, and flow control
 3. **Connect**: Click "Open" to establish connection
 4. **Send Data**: 
@@ -193,7 +193,7 @@ Contributions are welcome! If you find bugs or have feature requests, please:
 
 ## 📝 TODO
 
-- [ ] Dynamic USB device detection
+- [x] Dynamic USB device detection
 - [ ] Enhanced custom baud rate support
 - [ ] macOS version optimization
 - [ ] Data visualization and plotting

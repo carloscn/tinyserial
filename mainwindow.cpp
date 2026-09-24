@@ -51,7 +51,7 @@ MainWindow::MainWindow(QWidget *parent) :
     ui(new Ui::SerialPort),
     aboutDialog(nullptr),
     repeatSendTimer(new QTimer),
-    terminal(new QProcess),
+    portWatchTimer(new QTimer(this)),
     serial(new QSerialPort)
 {
     ui->setupUi(this);
@@ -64,7 +64,6 @@ MainWindow::MainWindow(QWidget *parent) :
     pauseComOutput = false;
     recCount = 0;
     sendCount = 0;
-    isRoot = false;
     validator_combox_baudrate = nullptr;
 
     // UI initialization
@@ -97,12 +96,16 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(repeatSendTimer, &QTimer::timeout, this, &MainWindow::SoftAutoWriteUart);
     connect(serial, &QSerialPort::readyRead, this, &MainWindow::serialRcvData);
     RefreshTheUSBList();
+    portWatchTimer->setInterval(1000);
+    connect(portWatchTimer, &QTimer::timeout, this, &MainWindow::RefreshTheUSBList);
+    portWatchTimer->start();
     on_checkBox_dispsend_clicked(false);
     on_checkBox_disptime_clicked(false);
 }
 
 MainWindow::~MainWindow()
 {
+    portWatchTimer->stop();
     on_pushButton_close_clicked();
     if (validator_combox_baudrate != nullptr) {
         delete validator_combox_baudrate;
@@ -203,38 +206,55 @@ void MainWindow::on_pushButton_open_clicked()
 
 void MainWindow::RefreshTheUSBList()
 {
-    ui->comboBox_serialPort->clear();
-    qDebug() << "Debug: Refresh the list...";
-
     const auto ports = QSerialPortInfo::availablePorts();
-    if (ports.isEmpty()) {
-        qDebug() << "No serial ports found.";
-        ui->statusBar->showMessage("No serial ports available", 2000);
+    QStringList labels;
+    bool openPortPresent = false;
+    for (const QSerialPortInfo &info : ports) {
+        labels.append(info.portName() + ",(" + info.description() + ")");
+        if (serial->isOpen() && info.portName() == currentConnectCom)
+            openPortPresent = true;
+    }
+
+    const bool openPortRemoved = serial->isOpen() && !openPortPresent;
+    if (openPortRemoved) {
+        const QString removedPort = currentConnectCom;
+        on_pushButton_close_clicked();
+        ui->statusBar->showMessage("Serial port " + removedPort + " was disconnected");
+    }
+
+    QStringList currentLabels;
+    for (int i = 0; i < ui->comboBox_serialPort->count(); ++i)
+        currentLabels.append(ui->comboBox_serialPort->itemText(i));
+    if (currentLabels == labels)
         return;
-    }
 
-    foreach (const QSerialPortInfo &info, ports) {
-        QString portName = info.portName();
-        QString uartName = info.description();
-        QString displayText = portName + ",(" + uartName + ")";
-
-        ui->comboBox_serialPort->addItem(displayText);
-
-        // Note: Permission handling for Linux - may need adjustment for Windows
-#ifdef Q_OS_LINUX
-        if (!isRoot) {
-            qDebug() << "Attempting to set permissions for /dev/" + portName;
-            // Use pkexec only if available, otherwise user needs to run with sudo
-            terminal->start("pkexec", QStringList() << "chmod" << "666" << "/dev/" + portName);
-            isRoot = true;  // Only try once
+    const QString selected = ui->comboBox_serialPort->currentText();
+    ui->comboBox_serialPort->blockSignals(true);
+    ui->comboBox_serialPort->clear();
+    ui->comboBox_serialPort->addItems(labels);
+    int keep = -1;
+    if (serial->isOpen()) {
+        const QString openPrefix = currentConnectCom + ",";
+        for (int i = 0; i < labels.size(); ++i) {
+            if (labels.at(i).startsWith(openPrefix)) {
+                keep = i;
+                break;
+            }
         }
-#endif
-
-        qDebug() << tr("SYSTEM: Scan the uart device: ") + uartName + "(" + portName + ")"
-                 + tr(" has been added to the available list!");
+    } else {
+        keep = ui->comboBox_serialPort->findText(selected);
     }
+    if (keep >= 0)
+        ui->comboBox_serialPort->setCurrentIndex(keep);
+    ui->comboBox_serialPort->blockSignals(false);
+    ui->comboBox_serialPort->setToolTip(ui->comboBox_serialPort->currentText());
 
-    ui->statusBar->showMessage(QString("Found %1 serial port(s)").arg(ports.size()), 2000);
+    if (openPortRemoved || serial->isOpen())
+        return;
+    if (labels.isEmpty())
+        ui->statusBar->showMessage("No serial ports available", 2000);
+    else
+        ui->statusBar->showMessage(QString("Found %1 serial port(s)").arg(labels.size()), 2000);
 }
 
 void MainWindow::on_pushButton_scan_clicked()
