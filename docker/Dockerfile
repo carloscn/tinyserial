@@ -1,7 +1,7 @@
-# Ubuntu toolchain for one TinySerial build environment.
-# script/build-docker.sh exports this once, then later compiles only run make.
-# MAKE_JOBS and PKG_VERSION are unused. They stay above the apt step so a
-# BuildKit cache from the previous package builds still matches.
+# The toolchain stage is built once per Ubuntu release and then reused.
+# PKG_VERSION is not installed. script/build-docker.sh always passes 1.5.3 so
+# this layer keeps hitting the cache that is already on disk. The package
+# version is PACKAGE_VERSION in the next stage, which does not rebuild Qt.
 
 ARG UBUNTU_VERSION=22.04
 FROM ubuntu:${UBUNTU_VERSION} AS toolchain
@@ -23,3 +23,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
+
+FROM toolchain AS build
+ARG PACKAGE_VERSION=1.5.3
+ARG UBUNTU_VERSION
+ARG COMPILE_JOBS=8
+COPY . .
+RUN sed -i "s/^Version: .*/Version: ${PACKAGE_VERSION}+ubuntu${UBUNTU_VERSION}/" tinyserial-deb-prj/DEBIAN/control
+ENV MAKE_JOBS=${COMPILE_JOBS}
+ENV DISTRO_TAG=ubuntu${UBUNTU_VERSION}
+RUN ./script/build-deb.sh
+
+FROM scratch AS package
+COPY --from=build /src/dist/ /
