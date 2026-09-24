@@ -1,5 +1,5 @@
 Package: tinyserial
-Version: 1.5.1
+Version: 1.5.2
 Section: utils
 Priority: optional
 Architecture: amd64
