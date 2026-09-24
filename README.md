@@ -39,39 +39,41 @@ TinySerial is an open-source, cross-platform serial port debugging tool designed
 
 ## 🚀 Quick Start
 
-### Install from apt.mltz.tech
+### Install
 
-Each Ubuntu release has its own package, built against that release's libraries. The host is the same. Only the suite name changes.
-
-| Ubuntu | Suite |
-| --- | --- |
-| 20.04 | `focal` |
-| 22.04 | `jammy` |
-| 24.04 | `noble` |
-| 26.04 | `resolute` |
-
-Ubuntu 26.04:
+Paste this whole block on Ubuntu 20.04, 22.04, 24.04, or 26.04. It picks the matching apt suite. Then log out and back in, and open **TinySerial** from the application menu.
 
 ```bash
-sudo curl -fsSL https://apt.mltz.tech/key.gpg -o /usr/share/keyrings/mltz.gpg
-echo "deb [signed-by=/usr/share/keyrings/mltz.gpg] https://apt.mltz.tech resolute main" | sudo tee /etc/apt/sources.list.d/mltz.list
-sudo apt-get update
-sudo apt-get install tinyserial
+(
+  . /etc/os-release
+  case "$VERSION_ID" in
+    20.04) suite=focal ;;
+    22.04) suite=jammy ;;
+    24.04) suite=noble ;;
+    26.04) suite=resolute ;;
+    *) echo "Ubuntu ${VERSION_ID:-unknown} is not a published TinySerial target." >&2; exit 1 ;;
+  esac
+  sudo curl -fsSL https://apt.mltz.tech/key.gpg -o /usr/share/keyrings/mltz.gpg
+  echo "deb [signed-by=/usr/share/keyrings/mltz.gpg] https://apt.mltz.tech ${suite} main" | sudo tee /etc/apt/sources.list.d/mltz.list
+  sudo apt-get update
+  sudo apt-get install -y tinyserial
+  sudo usermod -a -G dialout "$USER"
+)
 ```
 
-On 22.04, replace `resolute` with `jammy`. On 24.04 use `noble`. On 20.04 use `focal`.
-
-After installation, open **TinySerial** from the application menu, or run `tinyserial`. The menu entry does not open a terminal. The program is also at `/opt/tinyserial/tinyserial`.
-
-Serial ports need the `dialout` group. Log out and back in after:
-
-```bash
-sudo usermod -a -G dialout "$USER"
-```
+The menu entry does not open a terminal. You can also run `tinyserial`.
 
 ### Other platforms
 
-Windows and macOS builds are not published to the apt repository. Clone the repository and build with qmake, as described below.
+Windows and macOS builds are not published to the apt repository. Clone the repository and build with qmake:
+
+```bash
+git clone https://github.com/carloscn/tinyserial.git
+cd tinyserial
+qmake SerialPort.pro
+make
+./tinyserial
+```
 
 ## 📋 System Requirements
 
@@ -83,46 +85,34 @@ Windows and macOS builds are not published to the apt repository. Clone the repo
 
 ## 🔨 Building and publishing
 
-### One package on the current Ubuntu
+### Package for this Ubuntu
 
 ```bash
-sudo apt-get install qt5-qmake qtbase5-dev libqt5serialport5-dev dpkg-dev
+sudo apt-get install -y qt5-qmake qtbase5-dev libqt5serialport5-dev dpkg-dev
+git clone https://github.com/carloscn/tinyserial.git
+cd tinyserial
 ./script/build-deb.sh
 ```
 
-The package is written to `dist/tinyserial_<version>_ubuntu<release>_amd64.deb`.
+The package is `dist/tinyserial_<version>_ubuntu<release>_amd64.deb`.
 
-### All four Ubuntu releases
+### Package Ubuntu 20.04, 22.04, 24.04, and 26.04
 
-`script/build-docker.sh` compiles 20.04, 22.04, 24.04, and 26.04. The Qt and compiler packages for each release stay in the BuildKit cache at `/hrom/tinyserial/buildkit` on tensor1 (or `.docker-store/buildkit/` elsewhere). The next compile reuses that cache. Those packages are installed again only when the install step in `docker/Dockerfile` changes.
+Docker is required. The Qt toolchain for each release is cached and reused. On a machine where `/hrom` is writable, that cache is `/hrom/tinyserial/buildkit`.
 
 ```bash
-git clone https://github.com/carloscn/tinyserial.git /hrom/tinyserial/src
-cd /hrom/tinyserial/src
+git clone https://github.com/carloscn/tinyserial.git
+cd tinyserial
 ./script/build-docker.sh
 ```
 
-### Publish a release
+### Publish those packages
 
-From a machine logged in with `gh`, after the packages are in `dist/`:
+`gh` must already be logged in. This uploads `dist/tinyserial_*_ubuntu*.deb` to a GitHub Release. The release workflow copies each file to `apt.mltz.tech`. Raise `Version` in `tinyserial-deb-prj/DEBIAN/control` before a new release.
 
 ```bash
 ./script/release.sh
 ```
-
-That uploads the `.deb` files to a GitHub Release. The release workflow copies each file to `apt.mltz.tech`. The filename selects the suite: `ubuntu20.04` goes to `focal`, `ubuntu22.04` to `jammy`, `ubuntu24.04` to `noble`, and `ubuntu26.04` to `resolute`.
-
-Raise `Version` in `tinyserial-deb-prj/DEBIAN/control` before publishing a new release. Each Ubuntu build is published as `<version>+ubuntuX.Y`, so the four binaries can sit in one apt pool.
-
-### Build by hand
-
-```bash
-qmake SerialPort.pro
-make
-./tinyserial
-```
-
-On Windows with MinGW, use `qmake SerialPort.pro` and `mingw32-make`. `sudo make install` on Linux also installs a launcher under `/usr/local`.
 
 ## 📖 Usage Guide
 
@@ -150,24 +140,25 @@ On Windows with MinGW, use `qmake SerialPort.pro` and `mingw32-make`. `sudo make
 ### Common Issues
 
 **Q: TinySerial does not appear in the application menu**
-- Upgrade to 1.5.2 or newer. Older packages removed the menu entry while upgrading.
-  ```bash
-  sudo apt-get update
-  sudo apt-get install --reinstall tinyserial
-  ```
-- Then search for TinySerial in the application grid. A running session picks the new entry up within a few seconds.
+
+```bash
+sudo apt-get update
+sudo apt-get install -y --reinstall tinyserial
+```
+
+Search for TinySerial in the application grid. A running session picks the new entry up within a few seconds. Packages older than 1.5.2 removed the menu entry while upgrading.
 
 **Q: Application won't start**
 - Install it with apt so the Qt libraries for that Ubuntu release are installed
 - Check the program: `ls -l /opt/tinyserial/tinyserial`
 
 **Q: Can't find serial ports**
-- Verify your user has permission to access serial ports
-- On Linux, you may need to add your user to the `dialout` group:
-  ```bash
-  sudo usermod -a -G dialout $USER
-  ```
-- Log out and log back in for changes to take effect
+
+```bash
+sudo usermod -a -G dialout "$USER"
+```
+
+Log out and back in. The install block above already runs this command.
 
 **Q: Permission denied errors**
 - Run with appropriate permissions or configure udev rules for persistent access
