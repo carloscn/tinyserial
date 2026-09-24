@@ -94,7 +94,7 @@ The package is written to `dist/tinyserial_<version>_ubuntu<release>_amd64.deb`.
 
 ### All four Ubuntu releases
 
-`script/build-docker.sh` builds 20.04, 22.04, 24.04, and 26.04 in containers. On tensor1 the image cache is stored under `/hrom/tinyserial`, separate from the system Docker data used by other containers.
+`script/build-docker.sh` compiles 20.04, 22.04, 24.04, and 26.04. The first run exports each Ubuntu toolchain once to `/hrom/tinyserial/roots/<release>` on tensor1 (or `.docker-store/roots/` elsewhere). Later runs reuse those directories and only compile. A toolchain is exported again only when `docker/Dockerfile` changes.
 
 ```bash
 git clone https://github.com/carloscn/tinyserial.git /hrom/tinyserial/src
