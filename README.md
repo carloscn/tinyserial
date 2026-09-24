@@ -63,6 +63,23 @@ Paste this whole block on Ubuntu 20.04, 22.04, 24.04, or 26.04. It picks the mat
 
 The menu entry does not open a terminal. You can also run `tinyserial`.
 
+### Compile the source on Ubuntu
+
+Paste this whole block. It installs the Qt 5 build packages, compiles TinySerial, and runs it.
+
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential qt5-qmake qtbase5-dev libqt5serialport5-dev
+git clone https://github.com/carloscn/tinyserial.git
+cd tinyserial
+qmake SerialPort.pro
+make -j"$(nproc)"
+sudo usermod -a -G dialout "$USER"
+./tinyserial
+```
+
+Log out and back in before opening a serial port, so the `dialout` group applies.
+
 ### Other platforms
 
 Windows and macOS builds are not published to the apt repository. Clone the repository and build with qmake:
