@@ -1,24 +1,9 @@
 Package: tinyserial
-Version: 1.5
+Version: 1.5.1
 Section: utils
 Priority: optional
 Architecture: amd64
-Depends: libqt5widgets5 (>= 5.5.0),
-         libqt5gui5 (>= 5.5.0),
-         libqt5core5a (>= 5.5.0),
-         libqt5serialport5 (>= 5.5.0),
-         libqt5dbus5 (>= 5.5.0),
-         libc6 (>= 2.17),
-         libgcc1 (>= 1:4.1.1),
-         libstdc++6 (>= 4.8.1),
-         libgl1,
-         zlib1g (>= 1:1.1.4),
-         libglib2.0-0 (>= 2.40.0),
-         libx11-6,
-         libxcb1,
-         libxau6,
-         libxdmcp6
-Recommends: libqt5svg5
+Depends: @SHLIBS@
 Maintainer: Carlos Wei <carlos.wei.hk@gmail.com>
 Homepage: https://github.com/carloscn/tinyserial
 Description: TinySerial - GUI serial port debug tool for Linux

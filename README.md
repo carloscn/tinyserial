@@ -74,7 +74,7 @@ After installation, you can launch TinySerial in one of the following ways:
    ```
 
 2. **Application Menu:**
-   Find "TinySerial" in your system's application menu
+   Find "TinySerial" in your system's application menu. The package installs a launcher icon, so the program starts without a terminal.
 
 3. **Direct Binary:**
    ```bash
@@ -86,9 +86,9 @@ After installation, you can launch TinySerial in one of the following ways:
 - **Operating System**: Linux (Ubuntu 16.04+, Debian 9+), Windows 7+, macOS 10.12+
 - **Qt Framework**: Qt 5.5 or higher
 - **Dependencies**:
-  - Qt5 Widgets, GUI, Core, SerialPort, DBus
-  - Standard C/C++ runtime libraries
-  - X11 libraries (Linux)
+  - Qt5 Widgets, GUI, Core, and SerialPort
+  - The C and C++ runtimes
+  - On Debian/Ubuntu, `./gen_deb.sh` fills the package dependency list from the binary on that release
 
 ## 🔨 Building from Source
 
@@ -123,6 +123,12 @@ After installation, you can launch TinySerial in one of the following ways:
    ```bash
    ./tinyserial
    ```
+
+4. **Install the application-menu icon (Linux):**
+   ```bash
+   sudo make install
+   ```
+   This installs `tinyserial` onto `PATH`, plus a launcher and icon under `/usr/local`. Open TinySerial from the application menu afterward.
 
 ## 📖 Usage Guide
 

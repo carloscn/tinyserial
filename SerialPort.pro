@@ -39,3 +39,15 @@ FORMS    += serialport.ui \
 
 RESOURCES += \
     resource/resource.qrc
+
+unix:!macx {
+    isEmpty(PREFIX): PREFIX = /usr/local
+    target.path = $$PREFIX/bin
+    desktop.files = $$PWD/tinyserial-deb-prj/usr/share/applications/tinyserial.desktop
+    desktop.path = $$PREFIX/share/applications
+    icon.files = $$PWD/tinyserial-deb-prj/usr/share/pixmaps/tinyserial.png
+    icon.path = $$PREFIX/share/pixmaps
+    hicolor.files = $$PWD/tinyserial-deb-prj/usr/share/pixmaps/tinyserial.png
+    hicolor.path = $$PREFIX/share/icons/hicolor/72x72/apps
+    INSTALLS += target desktop icon hicolor
+}

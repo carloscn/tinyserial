@@ -41,7 +41,7 @@ sudo apt-get install dpkg-dev build-essential
    ```bash
    tinyserial
    ```
-   Or find it in your applications menu.
+   Or open TinySerial from the application menu. The menu entry uses the application icon and does not open a terminal.
 
 ## Uninstalling the Package
 
@@ -61,35 +61,29 @@ sudo apt-get remove tinyserial
 tinyserial-deb-prj/
 ├── DEBIAN/
 │   ├── control      # Package metadata and dependencies
-│   ├── postinst     # Post-installation script
-│   ├── postrm       # Post-removal script
+│   ├── postinst     # Refresh desktop and icon caches
+│   ├── postrm       # Refresh caches after removal
 │   ├── prerm        # Pre-removal script
 │   ├── changlog     # Package changelog
 │   └── copyright    # Copyright information
-└── tinyserial/      # Application files
-    └── ...
+├── opt/tinyserial/tinyserial
+├── usr/bin/tinyserial -> /opt/tinyserial/tinyserial
+├── usr/share/applications/tinyserial.desktop
+├── usr/share/pixmaps/tinyserial.png
+└── usr/share/icons/hicolor/72x72/apps/tinyserial.png
 ```
 
 ## Troubleshooting
 
 ### Dependency Issues
 
-If you encounter dependency problems:
+Build the `.deb` on the Ubuntu release you want to support. `gen_deb.sh` runs `dpkg-shlibdeps` and writes `Depends` from the binary just compiled on that system. Ubuntu 24.04 and 26.04 use different package names for the same Qt libraries, so one hand-written list cannot cover both.
 
-1. **Check installed Qt5 packages:**
-   ```bash
-   dpkg -l | grep qt5
-   ```
+Install with apt so those generated dependencies are pulled in:
 
-2. **Install missing dependencies manually:**
-   ```bash
-   sudo apt-get install libqt5widgets5 libqt5gui5 libqt5core5a libqt5serialport5
-   ```
-
-3. **Use apt to fix dependencies:**
-   ```bash
-   sudo apt-get install -f
-   ```
+```bash
+sudo apt-get install ./tinyserial.deb
+```
 
 ### Permission Issues
 
@@ -122,26 +116,19 @@ If the application doesn't appear in the applications menu:
 ## Package Information
 
 - **Package Name:** tinyserial
-- **Version:** 1.5
+- **Version:** 1.5.1
 - **Architecture:** amd64
 - **Maintainer:** Carlos Wei <carlos.wei.hk@gmail.com>
 - **Homepage:** https://github.com/carloscn/tinyserial
 
 ## Dependencies
 
-The package requires the following runtime dependencies:
-
-- Qt5 Widgets, GUI, Core, SerialPort, DBus libraries
-- Standard C/C++ runtime libraries
-- X11 libraries for GUI support
-- GLib and other system libraries
-
-See `DEBIAN/control` for the complete list of dependencies.
+`DEBIAN/control` keeps `Depends: @SHLIBS@`. `gen_deb.sh` replaces that marker with the libraries this binary actually links, using the package names of the machine where the package is built. Qt already depends on X11, zlib, and GLib, so those are not listed again.
 
 ## Notes
 
 - The package installs files to `/opt/tinyserial`
 - A symlink is created at `/usr/bin/tinyserial` for command-line access
 - Desktop entry is installed to `/usr/share/applications/`
-- Icon is installed to `/usr/share/pixmaps/`
+- Icon is installed to `/usr/share/pixmaps/` and `/usr/share/icons/hicolor/72x72/apps/`
 

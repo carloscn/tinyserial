@@ -1,66 +1,13 @@
 #!/bin/bash
 set -e
 
-echo "Installing TinySerial..."
-
-# Installation paths
-INSTALL_DIR="/opt/tinyserial"
-BIN_LINK="/usr/bin/tinyserial"
-DESKTOP_DIR="/usr/share/applications"
-ICON_DIR="/usr/share/pixmaps"
-
-# Create installation directory
-if [ ! -d "$INSTALL_DIR" ]; then
-    mkdir -p "$INSTALL_DIR"
+if command -v update-desktop-database >/dev/null 2>&1; then
+    update-desktop-database /usr/share/applications || true
 fi
 
-# Copy application files
-# Note: $D is the root directory of the installed package
-if [ -d "$D/opt/tinyserial" ]; then
-    cp -r "$D/opt/tinyserial"/* "$INSTALL_DIR/" 2>/dev/null || true
+if command -v gtk-update-icon-cache >/dev/null 2>&1; then
+    gtk-update-icon-cache -q /usr/share/icons/hicolor || true
 fi
 
-# Copy from package structure if using old layout
-if [ -d "$D/tinyserial/application/tinyserial/tinyserial" ]; then
-    cp -r "$D/tinyserial/application/tinyserial/tinyserial"/* "$INSTALL_DIR/" 2>/dev/null || true
-    cp -r "$D/tinyserial/application/lib"/* "$INSTALL_DIR/" 2>/dev/null || true
-fi
-
-# Set proper permissions
-chmod 755 "$INSTALL_DIR"
-if [ -f "$INSTALL_DIR/tinyserial" ]; then
-    chmod 755 "$INSTALL_DIR/tinyserial"
-fi
-
-# Install desktop file
-if [ -f "$INSTALL_DIR/tinyserial.desktop" ]; then
-    cp "$INSTALL_DIR/tinyserial.desktop" "$DESKTOP_DIR/"
-    chmod 644 "$DESKTOP_DIR/tinyserial.desktop"
-    # Update desktop database
-    if command -v update-desktop-database >/dev/null 2>&1; then
-        update-desktop-database "$DESKTOP_DIR" 2>/dev/null || true
-    fi
-fi
-
-# Install icon
-if [ -f "$INSTALL_DIR/tinyserial.png" ]; then
-    cp "$INSTALL_DIR/tinyserial.png" "$ICON_DIR/"
-    chmod 644 "$ICON_DIR/tinyserial.png"
-fi
-
-# Create symlink for command line access
-if [ -f "$INSTALL_DIR/tinyserial" ]; then
-    if [ -L "$BIN_LINK" ] || [ -f "$BIN_LINK" ]; then
-        rm -f "$BIN_LINK"
-    fi
-    ln -s "$INSTALL_DIR/tinyserial" "$BIN_LINK"
-    chmod 755 "$BIN_LINK"
-fi
-
-# Clean up temporary files if any
-if [ -d "$D/tinyserial" ]; then
-    rm -rf "$D/tinyserial" 2>/dev/null || true
-fi
-
-echo "TinySerial installation completed successfully!"
-echo "You can now run 'tinyserial' from the command line or find it in your applications menu."
+echo "TinySerial installed."
+echo "Open it from the application menu, or run: tinyserial"

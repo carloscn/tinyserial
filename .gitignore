@@ -2,3 +2,4 @@ SerialPort.pro.*
 .vscode
 .vscode/*
 build
+tinyserial.deb
