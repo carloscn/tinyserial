@@ -2,4 +2,5 @@ SerialPort.pro.*
 .vscode
 .vscode/*
 build
+dist
 tinyserial.deb

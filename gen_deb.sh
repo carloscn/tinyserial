@@ -37,7 +37,7 @@ for required in \
     "$DEB_DIR/usr/share/pixmaps/tinyserial.png" \
     "$DEB_DIR/usr/share/icons/hicolor/72x72/apps/tinyserial.png"
 do
-    if [ ! -e "$required" ]; then
+    if [ ! -e "$required" ] && [ ! -L "$required" ]; then
         echo "Error: required package file not found: $required"
         exit 1
     fi
