@@ -1,3 +1,11 @@
+tinyserial (1.5.4) unstable; urgency=medium
+
+  * Refresh the serial-port list when a device is plugged or unplugged
+  * Leave an open port connected until that device itself disappears
+  * Stop changing device permissions with pkexec during a scan
+
+ -- Carlos Wei <carlos.wei.hk@gmail.com>  Thu, 24 Sep 2026 11:15:00 +0200
+
 tinyserial (1.5.3) unstable; urgency=medium
 
   * Show the package version in the window title instead of a hardcoded v1.4

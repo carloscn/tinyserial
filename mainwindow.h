@@ -34,7 +34,6 @@
 #include <QByteArray>
 #include <QTimer>
 #include <QFont>
-#include <QProcess>
 #include <QDateTime>
 #include <QScrollBar>
 #include <QFileDialog>
@@ -116,13 +115,12 @@ private:
     Ui::SerialPort *ui;
     AboutDialog *aboutDialog;
     QTimer *repeatSendTimer;
-    QProcess *terminal;
+    QTimer *portWatchTimer;
     QSerialPort *serial;
     QString currentConnectCom;
     QByteArray globalRecvData;
     QValidator *validator_combox_baudrate;
 
-    bool isRoot;
     bool isShowSend;
     bool isShowTime;
     bool recAsciiFormat;
