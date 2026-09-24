@@ -4,3 +4,4 @@ SerialPort.pro.*
 build
 dist
 tinyserial.deb
+.docker-store

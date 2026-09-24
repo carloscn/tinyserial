@@ -1,8 +1,10 @@
-# Build a TinySerial .deb inside one Ubuntu release.
-# The package version gains +ubuntuX.Y so each release can live in the same apt pool.
+# Ubuntu toolchain for one TinySerial build environment.
+# script/build-docker.sh exports this once, then later compiles only run make.
+# MAKE_JOBS and PKG_VERSION are unused. They stay above the apt step so a
+# BuildKit cache from the previous package builds still matches.
 
 ARG UBUNTU_VERSION=22.04
-FROM ubuntu:${UBUNTU_VERSION} AS build
+FROM ubuntu:${UBUNTU_VERSION} AS toolchain
 
 ENV DEBIAN_FRONTEND=noninteractive
 ARG MAKE_JOBS=8
@@ -21,12 +23,3 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /src
-COPY . .
-
-RUN sed -i "s/^Version: .*/Version: ${PKG_VERSION}+ubuntu${UBUNTU_VERSION}/" tinyserial-deb-prj/DEBIAN/control
-ENV MAKE_JOBS=${MAKE_JOBS}
-ENV DISTRO_TAG=ubuntu${UBUNTU_VERSION}
-RUN ./script/build-deb.sh
-
-FROM scratch AS package
-COPY --from=build /src/dist/ /
