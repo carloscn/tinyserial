@@ -19,6 +19,7 @@
 /*  Email: carlos.wei.hk@gmail.com                              MULTIBEANS.*/
 /****************************************************************************/
 #include "mainwindow.h"
+#include "appversion.h"
 #include <QApplication>
 #include <QIcon>
 
@@ -26,6 +27,7 @@ int main(int argc, char *argv[])
 {
     QApplication app(argc, argv);
     app.setApplicationName(QStringLiteral("TinySerial"));
+    app.setApplicationVersion(QLatin1String(APP_VERSION));
     app.setWindowIcon(QIcon(QStringLiteral(":/img/desktop.ico")));
 #if QT_VERSION >= QT_VERSION_CHECK(5, 7, 0)
     app.setDesktopFileName(QStringLiteral("tinyserial"));
