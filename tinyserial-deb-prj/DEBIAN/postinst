@@ -1,6 +1,29 @@
 #!/bin/bash
 set -e
 
+# Older packages deleted these paths from their postrm during upgrade, after
+# the new files had already been unpacked. Copies under /usr/lib/tinyserial
+# are not touched by that script, so put the public files back when missing.
+LIB=/usr/lib/tinyserial
+if [ -d "$LIB" ]; then
+    mkdir -p /opt/tinyserial /usr/share/applications /usr/share/pixmaps
+    if [ ! -x /opt/tinyserial/tinyserial ] && [ -f "$LIB/tinyserial" ]; then
+        cp -a "$LIB/tinyserial" /opt/tinyserial/tinyserial
+        chmod 755 /opt/tinyserial/tinyserial
+    fi
+    if [ ! -e /usr/bin/tinyserial ] && [ -x /opt/tinyserial/tinyserial ]; then
+        ln -sfn /opt/tinyserial/tinyserial /usr/bin/tinyserial
+    fi
+    if [ ! -f /usr/share/applications/tinyserial.desktop ] && [ -f "$LIB/tinyserial.desktop" ]; then
+        cp -a "$LIB/tinyserial.desktop" /usr/share/applications/tinyserial.desktop
+        chmod 644 /usr/share/applications/tinyserial.desktop
+    fi
+    if [ ! -f /usr/share/pixmaps/tinyserial.png ] && [ -f "$LIB/tinyserial.png" ]; then
+        cp -a "$LIB/tinyserial.png" /usr/share/pixmaps/tinyserial.png
+        chmod 644 /usr/share/pixmaps/tinyserial.png
+    fi
+fi
+
 if command -v update-desktop-database >/dev/null 2>&1; then
     update-desktop-database /usr/share/applications || true
 fi

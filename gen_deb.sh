@@ -82,6 +82,13 @@ cp -a "$DEB_DIR"/. "$STAGE/"
 rm -f "$STAGE/README.md"
 chmod 755 "$STAGE/DEBIAN/postinst" "$STAGE/DEBIAN/postrm" "$STAGE/DEBIAN/prerm" \
     "$STAGE/opt/tinyserial/tinyserial"
+# Spare copies survive the pre-1.5.1 postrm, which deletes /opt/tinyserial,
+# /usr/bin/tinyserial, the desktop file, and the pixmap during upgrade.
+mkdir -p "$STAGE/usr/lib/tinyserial"
+cp -a "$STAGE/opt/tinyserial/tinyserial" "$STAGE/usr/lib/tinyserial/tinyserial"
+cp -a "$STAGE/usr/share/applications/tinyserial.desktop" "$STAGE/usr/lib/tinyserial/tinyserial.desktop"
+cp -a "$STAGE/usr/share/pixmaps/tinyserial.png" "$STAGE/usr/lib/tinyserial/tinyserial.png"
+chmod 755 "$STAGE/usr/lib/tinyserial/tinyserial"
 
 echo "Resolving shared library dependencies for this system..."
 SHLIB_ROOT="$(mktemp -d)"

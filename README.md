@@ -39,9 +39,18 @@ TinySerial is an open-source, cross-platform serial port debugging tool designed
 
 ## 🚀 Quick Start
 
-### Installation
+### Install from apt.mltz.tech
 
-#### For Ubuntu 26.04
+Each Ubuntu release has its own package, built against that release's libraries. The host is the same. Only the suite name changes.
+
+| Ubuntu | Suite |
+| --- | --- |
+| 20.04 | `focal` |
+| 22.04 | `jammy` |
+| 24.04 | `noble` |
+| 26.04 | `resolute` |
+
+Ubuntu 26.04:
 
 ```bash
 sudo curl -fsSL https://apt.mltz.tech/key.gpg -o /usr/share/keyrings/mltz.gpg
@@ -50,83 +59,70 @@ sudo apt-get update
 sudo apt-get install tinyserial
 ```
 
-A published GitHub Release that includes a `.deb` asset is copied to this repository automatically. Name a 24.04 package with `ubuntu24.04` in the filename; other Ubuntu packages are published for 26.04 (`resolute`).
+On 22.04, replace `resolute` with `jammy`. On 24.04 use `noble`. On 20.04 use `focal`.
 
-#### From a local package
+After installation, open **TinySerial** from the application menu, or run `tinyserial`. The menu entry does not open a terminal. The program is also at `/opt/tinyserial/tinyserial`.
+
+Serial ports need the `dialout` group. Log out and back in after:
 
 ```bash
-sudo apt-get install ./tinyserial.deb
+sudo usermod -a -G dialout "$USER"
 ```
 
-#### For Other Platforms
+### Other platforms
 
-Download the source code and compile it yourself (see [Building from Source](#-building-from-source) section).
-
-### Running TinySerial
-
-After installation, you can launch TinySerial in one of the following ways:
-
-1. **Command Line:**
-   ```bash
-   tinyserial
-   ```
-
-2. **Application Menu:**
-   Find "TinySerial" in your system's application menu. The package installs a launcher icon, so the program starts without a terminal.
-
-3. **Direct Binary:**
-   ```bash
-   /opt/tinyserial/tinyserial
-   ```
+Windows and macOS builds are not published to the apt repository. Clone the repository and build with qmake, as described below.
 
 ## 📋 System Requirements
 
-- **Operating System**: Linux (Ubuntu 16.04+, Debian 9+), Windows 7+, macOS 10.12+
-- **Qt Framework**: Qt 5.5 or higher
-- **Dependencies**:
-  - Qt5 Widgets, GUI, Core, and SerialPort
-  - The C and C++ runtimes
-  - On Debian/Ubuntu, `./gen_deb.sh` fills the package dependency list from the binary on that release
+- **Published packages:** Ubuntu 20.04, 22.04, 24.04, and 26.04 (amd64)
+- **Qt:** 5.12 or newer. The packages use the Qt libraries shipped by that Ubuntu release
+- **Also required:** permission to open serial devices (`dialout` on Ubuntu)
 
-## 🔨 Building from Source
+`gen_deb.sh` fills the package `Depends` line from the binary on the machine where the package is built. Qt already depends on X11, zlib, and GLib, so those are not listed again.
 
-### Prerequisites
+## 🔨 Building and publishing
 
-- Qt 5.5 or higher
-- C++ compiler with C++11 support (GCC 4.8+, Clang 3.3+, MSVC 2015+)
-- CMake or qmake
-- Qt SerialPort module
+### One package on the current Ubuntu
 
-### Build Instructions
+```bash
+sudo apt-get install qt5-qmake qtbase5-dev libqt5serialport5-dev dpkg-dev
+./script/build-deb.sh
+```
 
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/carloscn/tinyserial.git
-   cd tinyserial
-   ```
+The package is written to `dist/tinyserial_<version>_ubuntu<release>_amd64.deb`.
 
-2. **Build with qmake:**
-   ```bash
-   qmake SerialPort.pro
-   make
-   ```
+### All four Ubuntu releases
 
-   Or on Windows with MinGW:
-   ```bash
-   qmake SerialPort.pro
-   mingw32-make
-   ```
+`script/build-docker.sh` builds 20.04, 22.04, 24.04, and 26.04 in containers. On tensor1 the image cache is stored under `/hrom/tinyserial`, separate from the system Docker data used by other containers.
 
-3. **Run the application:**
-   ```bash
-   ./tinyserial
-   ```
+```bash
+git clone https://github.com/carloscn/tinyserial.git /hrom/tinyserial/src
+cd /hrom/tinyserial/src
+./script/build-docker.sh
+```
 
-4. **Install the application-menu icon (Linux):**
-   ```bash
-   sudo make install
-   ```
-   This installs `tinyserial` onto `PATH`, plus a launcher and icon under `/usr/local`. Open TinySerial from the application menu afterward.
+### Publish a release
+
+From a machine logged in with `gh`, after the packages are in `dist/`:
+
+```bash
+./script/release.sh
+```
+
+That uploads the `.deb` files to a GitHub Release. The release workflow copies each file to `apt.mltz.tech`. The filename selects the suite: `ubuntu20.04` goes to `focal`, `ubuntu22.04` to `jammy`, `ubuntu24.04` to `noble`, and `ubuntu26.04` to `resolute`.
+
+Raise `Version` in `tinyserial-deb-prj/DEBIAN/control` before publishing a new release. Each Ubuntu build is published as `<version>+ubuntuX.Y`, so the four binaries can sit in one apt pool.
+
+### Build by hand
+
+```bash
+qmake SerialPort.pro
+make
+./tinyserial
+```
+
+On Windows with MinGW, use `qmake SerialPort.pro` and `mingw32-make`. `sudo make install` on Linux also installs a launcher under `/usr/local`.
 
 ## 📖 Usage Guide
 
@@ -153,9 +149,17 @@ After installation, you can launch TinySerial in one of the following ways:
 
 ### Common Issues
 
+**Q: TinySerial does not appear in the application menu**
+- Upgrade to 1.5.2 or newer. Older packages removed the menu entry while upgrading.
+  ```bash
+  sudo apt-get update
+  sudo apt-get install --reinstall tinyserial
+  ```
+- Then search for TinySerial in the application grid. A running session picks the new entry up within a few seconds.
+
 **Q: Application won't start**
-- Ensure all Qt5 dependencies are installed
-- Check file permissions: `chmod +x /opt/tinyserial/tinyserial`
+- Install it with apt so the Qt libraries for that Ubuntu release are installed
+- Check the program: `ls -l /opt/tinyserial/tinyserial`
 
 **Q: Can't find serial ports**
 - Verify your user has permission to access serial ports
