@@ -51,11 +51,12 @@ jobs:
 
           for deb in "${debs[@]}"; do
             base="$(basename "$deb")"
-            if [[ "$base" == *ubuntu24.04* || "$base" == *noble* ]]; then
-              codename=noble
-            else
-              codename=resolute
-            fi
+            case "$base" in
+              *ubuntu20.04*|*focal*) codename=focal ;;
+              *ubuntu22.04*|*jammy*) codename=jammy ;;
+              *ubuntu24.04*|*noble*) codename=noble ;;
+              *) codename=resolute ;;
+            esac
             echo "Publishing $base into $codename"
             ssh -i "$HOME/.ssh/apt_key" -o IdentitiesOnly=yes -o BatchMode=yes \
               carlos@178.104.5.204 "$codename $base" < "$deb"
