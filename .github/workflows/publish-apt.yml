@@ -1,0 +1,62 @@
+name: Publish apt package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag whose .deb assets should be published
+        required: true
+        default: v1.5.1
+
+permissions:
+  contents: read
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download release packages
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            tag="${{ github.event.inputs.tag }}"
+          else
+            tag="${{ github.event.release.tag_name }}"
+          fi
+          mkdir -p debs
+          gh release download "$tag" --repo "${{ github.repository }}" --pattern '*.deb' --dir debs
+          find debs -type f -name '*.deb' -printf '%f\n'
+
+      - name: Publish packages to apt.mltz.tech
+        env:
+          APT_SSH_KEY: ${{ secrets.APT_SSH_KEY }}
+          APT_KNOWN_HOSTS: ${{ secrets.APT_KNOWN_HOSTS }}
+        run: |
+          set -euo pipefail
+          umask 077
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$APT_KNOWN_HOSTS" > "$HOME/.ssh/known_hosts"
+          printf '%s\n' "$APT_SSH_KEY" > "$HOME/.ssh/apt_key"
+
+          shopt -s nullglob
+          debs=(debs/*.deb)
+          if [ "${#debs[@]}" -eq 0 ]; then
+            echo "release has no .deb assets" >&2
+            exit 1
+          fi
+
+          for deb in "${debs[@]}"; do
+            base="$(basename "$deb")"
+            if [[ "$base" == *ubuntu24.04* || "$base" == *noble* ]]; then
+              codename=noble
+            else
+              codename=resolute
+            fi
+            echo "Publishing $base into $codename"
+            ssh -i "$HOME/.ssh/apt_key" -o IdentitiesOnly=yes -o BatchMode=yes \
+              carlos@178.104.5.204 "$codename $base" < "$deb"
+          done
