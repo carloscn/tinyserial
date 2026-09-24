@@ -31,6 +31,8 @@ fi
 BUILD_DIR="$ROOT/build"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
+BASE_VERSION="${VERSION%%+*}"
+printf '#define APP_VERSION "%s"\n' "$BASE_VERSION" > "$ROOT/appversion.h"
 
 echo "Compiling with $QMAKE"
 (
@@ -43,7 +45,6 @@ install -m 755 "$BUILD_DIR/tinyserial" "$ROOT/tinyserial-deb-prj/opt/tinyserial/
 "$ROOT/gen_deb.sh"
 
 mkdir -p "$ROOT/dist"
-BASE_VERSION="${VERSION%%+*}"
 DISTRO_TAG="${DISTRO_TAG:-ubuntu${VERSION_ID}}"
 OUTPUT="$ROOT/dist/tinyserial_${BASE_VERSION}_${DISTRO_TAG}_${ARCH}.deb"
 cp -a "$ROOT/tinyserial.deb" "$OUTPUT"

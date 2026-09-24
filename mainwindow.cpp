@@ -44,8 +44,7 @@
 
 #include "mainwindow.h"
 #include "ui_serialport.h"
-
-#define VERISON tr("v1.4")
+#include "appversion.h"
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
@@ -56,7 +55,7 @@ MainWindow::MainWindow(QWidget *parent) :
     serial(new QSerialPort)
 {
     ui->setupUi(this);
-    setWindowTitle("tinySerial " + VERISON);
+    setWindowTitle(QStringLiteral("tinySerial v") + QLatin1String(APP_VERSION));
 
     // Send/Receive ASCII Format initialization
     sendAsciiFormat = true;
