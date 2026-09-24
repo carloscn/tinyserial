@@ -1,0 +1,17 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=TinySerial
+Name[zh_CN]=TinySerial
+GenericName=Serial Port Debugger
+GenericName[zh_CN]=串口调试工具
+Comment=GUI serial port debug tool
+Comment[zh_CN]=图形化串口调试工具
+Exec=tinyserial
+TryExec=tinyserial
+Icon=tinyserial
+Terminal=false
+StartupNotify=true
+StartupWMClass=tinyserial
+Categories=Development;Engineering;
+Keywords=serial;uart;com;debug;
