@@ -41,24 +41,22 @@ TinySerial is an open-source, cross-platform serial port debugging tool designed
 
 ### Installation
 
-#### For Ubuntu/Debian Users
+#### For Ubuntu 26.04
 
-**Method 1: Using apt (Recommended - Auto-installs dependencies)**
+```bash
+sudo curl -fsSL https://apt.mltz.tech/key.gpg -o /usr/share/keyrings/mltz.gpg
+echo "deb [signed-by=/usr/share/keyrings/mltz.gpg] https://apt.mltz.tech resolute main" | sudo tee /etc/apt/sources.list.d/mltz.list
+sudo apt-get update
+sudo apt-get install tinyserial
+```
+
+A published GitHub Release that includes a `.deb` asset is copied to this repository automatically. Name a 24.04 package with `ubuntu24.04` in the filename; other Ubuntu packages are published for 26.04 (`resolute`).
+
+#### From a local package
+
 ```bash
 sudo apt-get install ./tinyserial.deb
 ```
-
-**Method 2: Using dpkg**
-```bash
-sudo dpkg -i tinyserial.deb
-```
-
-If you encounter dependency issues:
-```bash
-sudo apt-get install -f
-```
-
-**Note:** Version 1.5+ includes optimized dependency management. For detailed troubleshooting, see the [package documentation](tinyserial-deb-prj/README.md).
 
 #### For Other Platforms
 
