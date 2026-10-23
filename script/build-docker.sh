@@ -67,4 +67,4 @@ for release in "${RELEASES[@]}"; do
 done
 
 echo "Packages:"
-ls -lh "$ROOT/dist"/tinyserial_"${VERSION}"_ubuntu*.deb
+ls -lh "$ROOT/dist/tinyserial_${VERSION}_ubuntu"*.deb
