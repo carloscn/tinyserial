@@ -497,7 +497,7 @@
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_8">
           <item>
-           <widget class="QTextBrowser" name="textBrowser_rec">
+           <widget class="QPlainTextEdit" name="textBrowser_rec">
             <property name="styleSheet">
              <string notr="true">font: 12pt &quot;Lucida Console&quot;;</string>
             </property>
@@ -656,11 +656,6 @@
     </property>
     <addaction name="actionSave_Log_File"/>
    </widget>
-   <widget class="QMenu" name="menuEdit">
-    <property name="title">
-     <string>Edit</string>
-    </property>
-   </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">
      <string>About</string>
@@ -669,7 +664,6 @@
     <addaction name="actionAbout_MULTIBEANS"/>
    </widget>
    <addaction name="menuFIle"/>
-   <addaction name="menuEdit"/>
    <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>

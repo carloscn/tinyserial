@@ -1,58 +1,33 @@
-/**
- * \brief   This project about TinySerial Tool.
- *
- * \License  THIS FILE IS PART OF MULTIBEANS PROJECT;
- *           all of the files  - The core part of the project;
- *           THIS PROGRAM IS NOT FREE SOFTWARE, NEED MULTIBEANS ORG LIC;
- *
- *                ________________     ___           _________________
- *               |    __    __    |   |   |         |______     ______|
- *               |   |  |  |  |   |   |   |                |   |
- *               |   |  |__|  |   |   |   |________        |   |
- *               |___|        |___|   |____________|       |___|
- *
- *                               MULTIBEANS ORG.
- *                     Homepage: http://www.mlts.tech/
- *
- *           * You can download the license on our Github. ->
- *           * -> https://github.com/carloscn/tinyserial.git  <-
- *           * Copyright (c) 2017 Carlos Wei: carlos.wei.hk@gmail.com.
- *           * Copyright (c) 2013-2025 MULTIBEANS ORG. http://www.mlts.tech/
- *
- *  \note    void.
- ****************************************************************************/
-/****************************************************************************/
-/*                                                                          */
-/*  @file       : mainwindow.cpp                                            */
-/*  @Copyright  : MULTIBEANS ORG rights reserved.                          */
-/*  @Revision   : Ver 1.5.                                                  */
-/*  @Data       : 2025.12.11 Optimized.                                     */
-/*  @Belong     : PROJECT.                                                  */
-/*  @Git        : https://github.com/carloscn/tinyserial.git                */
-/*  @Platform   : Cross-platform. Qt 5.15+ for Windows/Linux platform.    */
-/*  @Encoding   : UTF-8                                                     */
-/****************************************************************************/
-/*  @Attention:                                                             */
-/*  ---------------------------------------------------------------------   */
-/*  |    Data    |  Behavior |     Offer      |          Content         |  */
-/*  | 2017.09.16 |   create  | Carlos Wei (M) | create the document.     |  */
-/*  | 2020.09.25 |   modify  | Carlos Wei (M) | v2.0  the document.      |  */
-/*  | 2025.12.11 |   optimize| Carlos Wei (M) | Code refactoring & fix.  |  */
-/*  ---------------------------------------------------------------------   */
-/*  Email: carlos.wei.hk@gmail.com                              MULTIBEANS. */
-/****************************************************************************/
+// SPDX-License-Identifier: MPL-2.0
+// Copyright (c) 2017-2025 Carlos Wei and MULTIBEANS ORG.
 
-#include "mainwindow.h"
-#include "ui_serialport.h"
 #include "appversion.h"
+#include "mainwindow.h"
+#include "serialcodec.h"
+#include "ui_serialport.h"
+
+#include <QDateTime>
+#include <QDebug>
+#include <QFile>
+#include <QFileDialog>
+#include <QMessageBox>
+#include <QPlainTextEdit>
+#include <QRegularExpression>
+#include <QRegularExpressionValidator>
+#include <QScrollBar>
+#include <QSerialPortInfo>
+#include <QTextCursor>
+#include <QTextStream>
+#include <QTimer>
 
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::SerialPort),
     aboutDialog(nullptr),
-    repeatSendTimer(new QTimer),
+    repeatSendTimer(new QTimer(this)),
     portWatchTimer(new QTimer(this)),
-    serial(new QSerialPort)
+    displayFlushTimer(new QTimer(this)),
+    serial(new QSerialPort(this))
 {
     ui->setupUi(this);
     setWindowTitle(QStringLiteral("tinySerial v") + QLatin1String(APP_VERSION));
@@ -70,11 +45,11 @@ MainWindow::MainWindow(QWidget *parent) :
     ui->pushButton_close->setEnabled(false);
     ui->pushButton_open->setEnabled(true);
     ui->pushButton_scan->setEnabled(true);
-    ui->pushButton_send->setEnabled(true);
+    ui->pushButton_send->setEnabled(false);
     ui->comboBox_baudrate->setCurrentIndex(CONFIG_BAUDRATE_115200_INDEX);
     ui->comboBox_checkdigit->setCurrentIndex(CONFIG_PARITY_NONE_INDEX);
     ui->comboBox_databits->setCurrentIndex(CONFIG_DATABITS_8_INDEX);
-    ui->comboBox_stopbits->setCurrentText(CONFIG_STOPBIT_ONE_INDEX);
+    ui->comboBox_stopbits->setCurrentIndex(CONFIG_STOPBIT_ONE_INDEX);
     ui->comboBox_flowctrl->setCurrentIndex(CONFIG_FLOWCTRL_NONE_INDEX);
 
     // Timer initialization for repeat send
@@ -95,6 +70,13 @@ MainWindow::MainWindow(QWidget *parent) :
 #endif
     connect(repeatSendTimer, &QTimer::timeout, this, &MainWindow::SoftAutoWriteUart);
     connect(serial, &QSerialPort::readyRead, this, &MainWindow::serialRcvData);
+    connect(serial, &QSerialPort::bytesWritten, this, &MainWindow::onSerialBytesWritten);
+    connect(serial, &QSerialPort::errorOccurred, this, &MainWindow::onSerialError);
+    serial->setReadBufferSize(MAX_DISPLAY_CHARACTERS);
+    displayFlushTimer->setInterval(DISPLAY_FLUSH_INTERVAL_MS);
+    displayFlushTimer->setSingleShot(true);
+    connect(displayFlushTimer, &QTimer::timeout, this, &MainWindow::flushPendingDisplay);
+    ui->textBrowser_rec->setLineWrapMode(QPlainTextEdit::NoWrap);
     RefreshTheUSBList();
     portWatchTimer->setInterval(1000);
     connect(portWatchTimer, &QTimer::timeout, this, &MainWindow::RefreshTheUSBList);
@@ -106,35 +88,35 @@ MainWindow::MainWindow(QWidget *parent) :
 MainWindow::~MainWindow()
 {
     portWatchTimer->stop();
+    displayFlushTimer->stop();
     on_pushButton_close_clicked();
     if (validator_combox_baudrate != nullptr) {
         delete validator_combox_baudrate;
         validator_combox_baudrate = nullptr;
         qDebug() << "delete validator before exit";
     }
-    delete aboutDialog;  // Clean up about dialog
     delete ui;
 }
 
 void MainWindow::serialRcvData()
 {
-    if (pauseComOutput) {
-        return;
-    }
-
     QByteArray recvArray = serial->readAll();
     if (recvArray.isEmpty()) {
         return;
     }
 
-    QString formattedStr = formatReceiveData(recvArray, recAsciiFormat);
-
-    QScrollBar *scrollbar = ui->textBrowser_rec->verticalScrollBar();
-    ui->textBrowser_rec->insertPlainText(formattedStr);
-    scrollbar->setSliderPosition(scrollbar->maximum());
-
-    recCount += (recAsciiFormat ? recvArray.length() : recvArray.toHex().length());
+    recCount += static_cast<quint64>(recvArray.size());
     ui->labelRBytes->setText(QString::number(recCount));
+
+    // Pause deliberately stops rendering, not draining the device buffer.
+    // This keeps memory bounded and lets a resumed session receive new data
+    // immediately instead of waiting for another readyRead notification.
+    if (pauseComOutput) {
+        return;
+    }
+
+    QString formattedStr = formatReceiveData(recvArray, recAsciiFormat);
+    queueDisplayText(formattedStr);
 }
 
 void MainWindow::SoftAutoWriteUart()
@@ -158,6 +140,14 @@ void MainWindow::SoftAutoWriteUart()
 void MainWindow::on_pushButton_open_clicked()
 {
     qDebug() << "COM Config Info: ";
+    if (ui->comboBox_baudrate->currentIndex() == CONFIG_BAUDRATE_CUSTOM_INDEX) {
+        bool valid = false;
+        const qint32 baudRate = ui->comboBox_baudrate->currentText().toInt(&valid);
+        if (!valid || baudRate <= 0) {
+            QMessageBox::warning(this, tr("Invalid baud rate"), tr("Enter a custom baud rate between 1 and 9,999,999."));
+            return;
+        }
+    }
     configureSerialPort();
     
     QString portInfo = ui->comboBox_serialPort->currentText();
@@ -168,13 +158,11 @@ void MainWindow::on_pushButton_open_clicked()
         return;
     }
     
-    QList<QString> infoList = portInfo.split(',');
-    if (infoList.isEmpty()) {
+    currentConnectCom = ui->comboBox_serialPort->currentData().toString();
+    if (currentConnectCom.isEmpty()) {
         QMessageBox::warning(this, "Warning", "Invalid port information!");
         return;
     }
-    
-    currentConnectCom = infoList.at(0);
     qDebug() << currentConnectCom;
     qDebug() << tr("SYSTEM: Serial port ") + portInfo + tr(" ,system is connecting with it.....");
     serial->setPortName(currentConnectCom);
@@ -228,21 +216,21 @@ void MainWindow::RefreshTheUSBList()
     if (currentLabels == labels)
         return;
 
-    const QString selected = ui->comboBox_serialPort->currentText();
+    const QString selectedPortName = ui->comboBox_serialPort->currentData().toString();
     ui->comboBox_serialPort->blockSignals(true);
     ui->comboBox_serialPort->clear();
-    ui->comboBox_serialPort->addItems(labels);
+    for (int i = 0; i < labels.size(); ++i)
+        ui->comboBox_serialPort->addItem(labels.at(i), ports.at(i).portName());
     int keep = -1;
     if (serial->isOpen()) {
-        const QString openPrefix = currentConnectCom + ",";
         for (int i = 0; i < labels.size(); ++i) {
-            if (labels.at(i).startsWith(openPrefix)) {
+            if (ports.at(i).portName() == currentConnectCom) {
                 keep = i;
                 break;
             }
         }
     } else {
-        keep = ui->comboBox_serialPort->findText(selected);
+        keep = ui->comboBox_serialPort->findData(selectedPortName);
     }
     if (keep >= 0)
         ui->comboBox_serialPort->setCurrentIndex(keep);
@@ -272,25 +260,23 @@ void MainWindow::on_pushButton_close_clicked()
     ui->comboBox_serialPort->setEnabled(true);
     ui->statusBar->showMessage("No Port is Connected!");
     ui->checkBox_repeat->setChecked(false);
+    repeatSend = false;
     repeatSendTimer->stop();
 }
 
 void MainWindow::on_comboBox_baudrate_currentIndexChanged(int index)
 {
     ui->comboBox_baudrate->setEditable(false);
-    if (validator_combox_baudrate != nullptr) {
-        delete validator_combox_baudrate;
-        validator_combox_baudrate = nullptr;
-        qDebug() << "delete and clear validator";
-    }
+    ui->comboBox_baudrate->setValidator(nullptr);
+    delete validator_combox_baudrate;
+    validator_combox_baudrate = nullptr;
 
     if (index == CONFIG_BAUDRATE_CUSTOM_INDEX) {
         ui->comboBox_baudrate->setEditable(true);
         ui->comboBox_baudrate->setCurrentText("");
-        QRegExp regx("[0-9]{1,7}");  // Allow 1-7 digits instead of exactly 7
-        validator_combox_baudrate = new QRegExpValidator(regx, ui->comboBox_baudrate);
+        const QRegularExpression expression(QStringLiteral("^[1-9][0-9]{0,6}$"));
+        validator_combox_baudrate = new QRegularExpressionValidator(expression, ui->comboBox_baudrate);
         ui->comboBox_baudrate->setValidator(validator_combox_baudrate);
-        qDebug() << "validator set for custom baudrate";
     } else {
         setBaudRate(index);
     }
@@ -365,17 +351,6 @@ void MainWindow::on_pushButton_send_clicked()
 
 
 
-char MainWindow::ConvertHexChar(char ch)
-{
-    if ((ch >= '0') && (ch <= '9'))
-        return ch-0x30;
-    else if ((ch >= 'A') && (ch <= 'F'))
-        return ch-'A'+10;
-    else if ((ch >= 'a') && (ch <= 'f'))
-        return ch-'a'+10;
-    else return (-1);
-}
-
 void MainWindow::on_spinBox_repeat_valueChanged(int arg1)
 {
     if (ui->checkBox_repeat->isChecked() && arg1 > 0) {
@@ -386,6 +361,13 @@ void MainWindow::on_spinBox_repeat_valueChanged(int arg1)
 
 void MainWindow::on_checkBox_repeat_clicked(bool checked)
 {
+    if (checked && !serial->isOpen()) {
+        QMessageBox::warning(this, tr("Serial port closed"), tr("Open a serial port before enabling repeat send."));
+        ui->checkBox_repeat->setChecked(false);
+        repeatSend = false;
+        return;
+    }
+
     repeatSend = checked;
     if (repeatSend) {
         int interval = ui->spinBox_repeat->value();
@@ -426,6 +408,11 @@ void MainWindow::on_pushButton_pause_clicked()
     }
 }
 
+void MainWindow::on_checkBox_wordwrap_clicked(bool checked)
+{
+    ui->textBrowser_rec->setLineWrapMode(checked ? QPlainTextEdit::WidgetWidth : QPlainTextEdit::NoWrap);
+}
+
 void MainWindow::on_actionAbout_TinySerialPort_triggered()
 {
     if (!aboutDialog) {
@@ -436,6 +423,13 @@ void MainWindow::on_actionAbout_TinySerialPort_triggered()
     aboutDialog->show();
     aboutDialog->raise();
     aboutDialog->activateWindow();
+}
+
+void MainWindow::on_actionAbout_MULTIBEANS_triggered()
+{
+    QMessageBox::information(this,
+                             tr("About MULTIBEANS"),
+                             tr("TinySerial is part of the MULTIBEANS project.\nhttps://github.com/carloscn/tinyserial"));
 }
 
 void MainWindow::on_checkBox_dispsend_clicked(bool checked)
@@ -484,9 +478,10 @@ void MainWindow::on_comboBox_serialPort_currentIndexChanged(const QString &arg1)
 
 void MainWindow::on_comboBox_baudrate_editTextChanged(const QString &arg1)
 {
-    qint32 baud_rate = arg1.toInt();
-    serial->setBaudRate(baud_rate);
-    qDebug() << "Baud Rate: " << baud_rate;
+    bool valid = false;
+    const qint32 baudRate = arg1.toInt(&valid);
+    if (valid && baudRate > 0)
+        serial->setBaudRate(baudRate);
 }
 
 // Helper function implementations
@@ -614,7 +609,14 @@ void MainWindow::setFlowControl(int index)
 
 void MainWindow::configureSerialPort()
 {
-    setBaudRate(ui->comboBox_baudrate->currentIndex());
+    if (ui->comboBox_baudrate->currentIndex() == CONFIG_BAUDRATE_CUSTOM_INDEX) {
+        bool valid = false;
+        const qint32 baudRate = ui->comboBox_baudrate->currentText().toInt(&valid);
+        if (valid && baudRate > 0)
+            serial->setBaudRate(baudRate);
+    } else {
+        setBaudRate(ui->comboBox_baudrate->currentIndex());
+    }
     setStopBits(ui->comboBox_stopbits->currentIndex());
     setParity(ui->comboBox_checkdigit->currentIndex());
     setDataBits(ui->comboBox_databits->currentIndex());
@@ -628,7 +630,7 @@ QString MainWindow::formatReceiveData(const QByteArray &data, bool isAscii)
     if (isAscii) {
         str = QString::fromLatin1(data);
     } else {
-        str = data.toHex(' ').toUpper();  // Add space between hex bytes and uppercase
+        str = SerialCodec::encodeHex(data);
     }
 
     if (isShowSend) {
@@ -644,22 +646,9 @@ QString MainWindow::formatReceiveData(const QByteArray &data, bool isAscii)
     return str;
 }
 
-QString MainWindow::formatSendData(const QString &input, bool isAscii)
+QString MainWindow::formatSendData(const QByteArray &data, bool isAscii)
 {
-    QString str;
-    if (isAscii) {
-        str = input;
-    } else {
-        QString tmp = input;
-        tmp.remove(QRegExp("\\s"));
-        if (tmp.length() % 2 != 0) {
-            tmp.insert(0, '0');
-        }
-
-        QByteArray temp = QByteArray::fromHex(tmp.toLatin1());
-
-        str = temp.toHex(' ').toUpper();
-    }
+    QString str = isAscii ? QString::fromLatin1(data) : SerialCodec::encodeHex(data);
 
     if (isShowSend) {
         str = "tx -> " + str;
@@ -680,20 +669,12 @@ void MainWindow::sendData(const QString &input, bool showInDisplay)
 
     if (sendAsciiFormat) {
         dataToSend = input.toLatin1();
-        qDebug() << "UART SendAscii :" << dataToSend;
     } else {
-        // === FIX: Robust HEX conversion logic ===
-        QString tmp = input;
-
-        tmp.remove(QRegExp("\\s"));
-
-        if (tmp.length() % 2 != 0) {
-            tmp.insert(0, '0');
+        QString error;
+        if (!SerialCodec::decodeHex(input, &dataToSend, &error)) {
+            QMessageBox::warning(this, tr("Invalid HEX data"), error);
+            return;
         }
-
-        dataToSend = QByteArray::fromHex(tmp.toLatin1());
-
-        qDebug() << "UART SendAscii :" << dataToSend.toHex(' ').toUpper();
     }
 
     if (serial->isOpen()) {
@@ -704,11 +685,69 @@ void MainWindow::sendData(const QString &input, bool showInDisplay)
         }
 
         if (showInDisplay) {
-            QString formattedStr = formatSendData(input, sendAsciiFormat);
-            ui->textBrowser_rec->insertPlainText(formattedStr);
+            queueDisplayText(formatSendData(dataToSend, sendAsciiFormat));
         }
-
-        sendCount += (sendAsciiFormat ? input.length() : dataToSend.length());
-        ui->labelSBytes->setText(QString::number(sendCount));
     }
+}
+
+void MainWindow::queueDisplayText(const QString &text)
+{
+    if (text.isEmpty())
+        return;
+
+    pendingDisplay.append(text);
+    if (pendingDisplay.size() > MAX_DISPLAY_CHARACTERS)
+        pendingDisplay = pendingDisplay.right(MAX_DISPLAY_CHARACTERS);
+    if (!displayFlushTimer->isActive())
+        displayFlushTimer->start();
+}
+
+void MainWindow::flushPendingDisplay()
+{
+    if (pendingDisplay.isEmpty())
+        return;
+
+    const QString text = pendingDisplay;
+    pendingDisplay.clear();
+    appendDisplayText(text);
+}
+
+void MainWindow::appendDisplayText(const QString &text)
+{
+    QPlainTextEdit *display = ui->textBrowser_rec;
+    QScrollBar *scrollbar = display->verticalScrollBar();
+    const bool followTail = scrollbar->value() >= scrollbar->maximum();
+
+    const QString retainedText = text.size() > MAX_DISPLAY_CHARACTERS ? text.right(MAX_DISPLAY_CHARACTERS) : text;
+    const int overflow = display->document()->characterCount() + retainedText.size() - MAX_DISPLAY_CHARACTERS;
+    if (overflow > 0) {
+        QTextCursor cursor(display->document());
+        cursor.setPosition(0);
+        cursor.setPosition(overflow, QTextCursor::KeepAnchor);
+        cursor.removeSelectedText();
+    }
+
+    display->moveCursor(QTextCursor::End);
+    display->insertPlainText(retainedText);
+    if (followTail)
+        scrollbar->setValue(scrollbar->maximum());
+}
+
+void MainWindow::onSerialBytesWritten(qint64 bytes)
+{
+    if (bytes <= 0)
+        return;
+
+    sendCount += static_cast<quint64>(bytes);
+    ui->labelSBytes->setText(QString::number(sendCount));
+}
+
+void MainWindow::onSerialError(QSerialPort::SerialPortError error)
+{
+    if (error == QSerialPort::NoError || !serial->isOpen())
+        return;
+
+    const QString message = tr("Serial port error: %1").arg(serial->errorString());
+    ui->statusBar->showMessage(message, 5000);
+    qWarning() << message;
 }

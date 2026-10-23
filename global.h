@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: MPL-2.0
 // Qt Cross-platform Project.                                             GitHub
 /****************************************************************************/
 /*                                                                          */
 /*  @file       : global.h                                                  */
-/*  @Copyright  : MULTIBEANS ORG rights reserved.                          */
+/*  @License    : MPL-2.0                                                  */
 /*  @Revision   : Ver 1.5.                                                  */
 /*  @Data       : 2025.12.11 Optimized.                                     */
 /*  @Belong     : PROJECT.                                                  */

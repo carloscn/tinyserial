@@ -41,7 +41,7 @@ echo "Compiling with $QMAKE"
     make -j"${MAKE_JOBS:-$(nproc)}"
 )
 
-install -m 755 "$BUILD_DIR/tinyserial" "$ROOT/tinyserial-deb-prj/opt/tinyserial/tinyserial"
+install -D -m 755 "$BUILD_DIR/tinyserial" "$ROOT/tinyserial-deb-prj/opt/tinyserial/tinyserial"
 "$ROOT/gen_deb.sh"
 
 mkdir -p "$ROOT/dist"

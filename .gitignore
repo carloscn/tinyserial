@@ -1,7 +1,10 @@
 SerialPort.pro.*
+.qmake.stash
+*.pro.user
 .vscode
 .vscode/*
 build
 dist
 tinyserial.deb
 .docker-store
+cmake-build-*/

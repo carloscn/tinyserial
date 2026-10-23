@@ -80,6 +80,20 @@ sudo usermod -a -G dialout "$USER"
 
 Log out and back in before opening a serial port, so the `dialout` group applies.
 
+### CMake build (Qt 5 or Qt 6)
+
+The qmake project remains available for compatibility. New development can use
+CMake; it selects Qt 6 when installed and otherwise uses Qt 5.
+
+```bash
+sudo apt-get update
+sudo apt-get install -y build-essential cmake ninja-build qtbase5-dev libqt5serialport5-dev
+cmake -S . -B build-cmake -G Ninja -DBUILD_TESTING=ON
+cmake --build build-cmake
+ctest --test-dir build-cmake --output-on-failure
+./build-cmake/tinyserial
+```
+
 ### Other platforms
 
 Windows and macOS builds are not published to the apt repository. Clone the repository and build with qmake:
@@ -182,6 +196,9 @@ Log out and back in. The install block above already runs this command.
 
 **Q: Dependency issues on Linux**
 - See the [package troubleshooting guide](tinyserial-deb-prj/README.md)
+
+**Q: HEX data is rejected**
+- HEX input accepts whitespace between bytes, but every byte must have exactly two hexadecimal digits. For example: `01 AB FF`.
 
 ## 🤝 Contributing
 

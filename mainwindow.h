@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: MPL-2.0
 // Qt Cross-platform Project.                                             GitHub
 /****************************************************************************/
 /*                                                                          */
 /*  @file       : mainwindow.h                                              */
-/*  @Copyright  : MULTIBEANS ORG rights reserved.                          */
+/*  @License    : MPL-2.0                                                  */
 /*  @Revision   : Ver 1.5.                                                  */
 /*  @Data       : 2025.12.11 Optimized.                                     */
 /*  @Belong     : PROJECT.                                                  */
@@ -24,20 +25,7 @@
 
 #include <QMainWindow>
 #include <QSerialPort>
-#include <QTimer>
 #include "global.h"
-#include <QDebug>
-#include <QFile>
-#include <QSerialPortInfo>
-#include <QMessageBox>
-#include <QString>
-#include <QByteArray>
-#include <QTimer>
-#include <QFont>
-#include <QDateTime>
-#include <QScrollBar>
-#include <QFileDialog>
-#include <QRegExp>
 #include <QValidator>
 #include "aboutdialog.h"
 
@@ -52,11 +40,6 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
-
-    char ConvertHexChar(char ch);
-    void initQssStyleSheet();
-    long xcount;
-    long xrange;
 
 private slots:
     void on_pushButton_open_clicked();
@@ -98,6 +81,8 @@ private slots:
 
     void on_actionAbout_TinySerialPort_triggered();
 
+    void on_actionAbout_MULTIBEANS_triggered();
+
     void SoftAutoWriteUart( void );
 
     void on_checkBox_dispsend_clicked(bool checked);
@@ -110,16 +95,25 @@ private slots:
 
     void on_comboBox_baudrate_editTextChanged(const QString &arg1);
 
+    void on_checkBox_wordwrap_clicked(bool checked);
+
+    void flushPendingDisplay();
+    void onSerialBytesWritten(qint64 bytes);
+    void onSerialError(QSerialPort::SerialPortError error);
+
 private:
     static constexpr int DEFAULT_REPEAT_INTERVAL_MS = 1000;
+    static constexpr int DISPLAY_FLUSH_INTERVAL_MS = 33;
+    static constexpr int MAX_DISPLAY_CHARACTERS = 1024 * 1024;
     Ui::SerialPort *ui;
     AboutDialog *aboutDialog;
     QTimer *repeatSendTimer;
     QTimer *portWatchTimer;
+    QTimer *displayFlushTimer;
     QSerialPort *serial;
     QString currentConnectCom;
-    QByteArray globalRecvData;
     QValidator *validator_combox_baudrate;
+    QString pendingDisplay;
 
     bool isShowSend;
     bool isShowTime;
@@ -132,16 +126,18 @@ private:
 
     // Helper functions for code reuse
     void configureSerialPort();
+    void initQssStyleSheet();
     void setBaudRate(int index);
     void setStopBits(int index);
     void setParity(int index);
     void setDataBits(int index);
     void setFlowControl(int index);
     QString formatReceiveData(const QByteArray &data, bool isAscii);
-    QString formatSendData(const QString &input, bool isAscii);
+    QString formatSendData(const QByteArray &data, bool isAscii);
     void sendData(const QString &input, bool showInDisplay = true);
+    void queueDisplayText(const QString &text);
+    void appendDisplayText(const QString &text);
 
-    QByteArray statusBarComInfo;
     quint64 recCount;
     quint64 sendCount;
 };
