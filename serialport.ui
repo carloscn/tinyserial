@@ -305,6 +305,20 @@
             </layout>
            </item>
            <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_receiveEncoding">
+             <item>
+              <widget class="QLabel" name="label_receiveEncoding">
+               <property name="text">
+                <string>Encoding</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="comboBox_receiveEncoding"/>
+             </item>
+            </layout>
+           </item>
+           <item>
             <widget class="QCheckBox" name="checkBox_wordwrap">
              <property name="text">
               <string>Word wrap</string>
@@ -363,6 +377,41 @@
                 <string>Hex</string>
                </property>
               </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_sendEncoding">
+             <item>
+              <widget class="QLabel" name="label_sendEncoding">
+               <property name="text">
+                <string>Encoding</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="comboBox_sendEncoding"/>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="checkBox_escapeSequences">
+               <property name="text">
+                <string>Escape sequences</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
+           </item>
+           <item>
+            <layout class="QHBoxLayout" name="horizontalLayout_lineEnding">
+             <item>
+              <widget class="QLabel" name="label_lineEnding">
+               <property name="text">
+                <string>Append line ending</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QComboBox" name="comboBox_lineEnding"/>
              </item>
             </layout>
            </item>
@@ -554,6 +603,21 @@
      <string>File</string>
     </property>
     <addaction name="actionSave_Log_File"/>
+    <addaction name="actionOpen_Log_Folder"/>
+    <addaction name="separator"/>
+    <addaction name="actionSend_File"/>
+    <addaction name="actionReceive_File"/>
+    <addaction name="actionCancel_File_Transfer"/>
+   </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionTerminal_Cache_Size"/>
+    <addaction name="actionTerminal_Font"/>
+    <addaction name="separator"/>
+    <addaction name="actionDebug_Mode"/>
+    <addaction name="actionFull_Terminal_Mode"/>
    </widget>
    <widget class="QMenu" name="menuAbout">
     <property name="title">
@@ -563,6 +627,7 @@
     <addaction name="actionAbout_MULTIBEANS"/>
    </widget>
    <addaction name="menuFIle"/>
+   <addaction name="menuView"/>
    <addaction name="menuAbout"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
@@ -580,6 +645,42 @@
    <property name="text">
     <string>Save Log File</string>
    </property>
+  </action>
+  <action name="actionOpen_Log_Folder">
+   <property name="text">
+    <string>Open log folder</string>
+   </property>
+  </action>
+  <action name="actionTerminal_Font">
+   <property name="text">
+    <string>Terminal Font...</string>
+   </property>
+  </action>
+  <action name="actionTerminal_Cache_Size">
+   <property name="text">
+    <string>Terminal cache size...</string>
+   </property>
+  </action>
+  <action name="actionSend_File">
+   <property name="text"><string>Send file...</string></property>
+   <property name="shortcut"><string>Ctrl+Shift+S</string></property>
+  </action>
+  <action name="actionReceive_File">
+   <property name="text"><string>Receive file...</string></property>
+   <property name="shortcut"><string>Ctrl+Shift+R</string></property>
+  </action>
+  <action name="actionCancel_File_Transfer">
+   <property name="text"><string>Cancel file transfer</string></property>
+   <property name="enabled"><bool>false</bool></property>
+  </action>
+  <action name="actionDebug_Mode">
+   <property name="checkable"><bool>true</bool></property>
+   <property name="checked"><bool>true</bool></property>
+   <property name="text"><string>Debug mode</string></property>
+  </action>
+  <action name="actionFull_Terminal_Mode">
+   <property name="checkable"><bool>true</bool></property>
+   <property name="text"><string>Full terminal mode</string></property>
   </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>

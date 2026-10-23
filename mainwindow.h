@@ -28,21 +28,26 @@
 #include "global.h"
 #include <QValidator>
 #include "aboutdialog.h"
+#include "displaybuffer.h"
 #include "timeline.h"
 #include "uilanguage.h"
+#include "xmodemtransfer.h"
 
 namespace Ui {
 class SerialPort;
 }
 
 class QLabel;
+class TerminalHighlighter;
 class QComboBox;
 class QFile;
 class QGridLayout;
 class QEvent;
+class QResizeEvent;
 class QCheckBox;
 class QLineEdit;
 class QPushButton;
+class QScrollArea;
 class QTableView;
 class QWidget;
 
@@ -62,6 +67,8 @@ public:
 
 protected:
     bool eventFilter(QObject *watched, QEvent *event) override;
+    void changeEvent(QEvent *event) override;
+    void resizeEvent(QResizeEvent *event) override;
 
 private slots:
     void on_pushButton_open_clicked();
@@ -112,6 +119,14 @@ private slots:
     void on_checkBox_disptime_clicked(bool checked);
 
     void on_actionSave_Log_File_triggered();
+    void on_actionOpen_Log_Folder_triggered();
+    void on_actionTerminal_Cache_Size_triggered();
+    void on_actionTerminal_Font_triggered();
+    void on_actionSend_File_triggered();
+    void on_actionReceive_File_triggered();
+    void on_actionCancel_File_Transfer_triggered();
+    void on_actionFull_Terminal_Mode_triggered();
+    void on_actionDebug_Mode_triggered();
 
     void on_comboBox_serialPort_currentIndexChanged(int index);
 
@@ -122,6 +137,7 @@ private slots:
     void on_checkBox_realtime_log_clicked(bool checked);
 
     void flushPendingDisplay();
+    void flushPendingReceive();
     void onSerialBytesWritten(qint64 bytes);
     void onSerialError(QSerialPort::SerialPortError error);
     void flushTimelineLine();
@@ -135,7 +151,11 @@ private slots:
 private:
     static constexpr int DEFAULT_REPEAT_INTERVAL_MS = 1000;
     static constexpr int DISPLAY_FLUSH_INTERVAL_MS = 33;
-    static constexpr int MAX_DISPLAY_CHARACTERS = 1024 * 1024;
+    static constexpr int DEFAULT_DISPLAY_CHARACTERS = 1024 * 1024;
+    static constexpr int MIN_DISPLAY_CACHE_MIB = 1;
+    static constexpr int MAX_DISPLAY_CACHE_MIB = 64;
+    static constexpr int MAX_PENDING_DISPLAY_CHARACTERS = 256 * 1024;
+    static constexpr int MAX_PENDING_WRITE_BYTES = 4 * 1024 * 1024;
     // Received bytes with no newline become one event after this much silence.
     static constexpr int TIMELINE_IDLE_GAP_MS = 20;
     static constexpr int TIMELINE_FLUSH_INTERVAL_MS = 100;
@@ -144,19 +164,43 @@ private:
     QTimer *repeatSendTimer;
     QTimer *portWatchTimer;
     QTimer *displayFlushTimer;
+    QTimer *receiveBatchTimer;
     QSerialPort *serial;
     QFile *realtimeLogFile;
     QLabel *connectionIndicator;
+    QLabel *rxActivityIndicator;
+    QLabel *txActivityIndicator;
+    QTimer *rxActivityTimer;
+    QTimer *txActivityTimer;
     QLabel *connectionTitle;
     QLabel *receiveTitle;
     QLabel *transmitTitle;
     QComboBox *languageSelector;
     QComboBox *themeSelector;
     QGridLayout *settingsGrid;
+    QScrollArea *sidebarScroll;
+    QWidget *sidebarContent;
+    QWidget *sendAreaWidget;
+    QWidget *fullTerminalBar;
+    QPushButton *fullTerminalButton;
+    QComboBox *fullTerminalPort;
+    QComboBox *fullTerminalBaud;
+    QComboBox *fullTerminalDataBits;
+    QComboBox *fullTerminalStopBits;
+    QComboBox *fullTerminalParity;
+    QComboBox *fullTerminalFlowControl;
+    QPushButton *fullTerminalConnect;
+    QPushButton *fullTerminalLog;
+    QPushButton *fullTerminalOpenLog;
     UiLanguage currentLanguage;
     QString currentConnectCom;
     QValidator *validator_combox_baudrate;
-    QString pendingDisplay;
+    int displayCharacterLimit;
+    DisplayBuffer pendingDisplay;
+    XmodemTransfer *fileTransfer;
+    TerminalHighlighter *terminalHighlighter;
+    QByteArray pendingReceive;
+    QByteArray pendingWrite;
 
     TimelineModel *timelineModel;
     TimelineFilterModel *timelineFilter;
@@ -178,7 +222,7 @@ private:
     QPushButton *timelineJsonButton;
     QPushButton *timelineClearButton;
 
-    bool isShowSend;
+    bool showSentData;
     bool isShowTime;
     bool recAsciiFormat;
     bool sendAsciiFormat;
@@ -186,15 +230,20 @@ private:
     bool pauseComOutput;
     UiThemeMode themeMode;
     bool darkMode;
+    bool layoutUpdatePending;
+    bool fullTerminalMode;
 
     void RefreshTheUSBList();
 
     // Helper functions for code reuse
-    void configureSerialPort();
+    bool configureSerialPort();
     void initQssStyleSheet();
     void configureLayout();
     void updateLayoutMetrics();
+    void scheduleLayoutMetricsUpdate();
     void configureLanguageSelector();
+    void configureTextFormatControls();
+    void syncTextFormatControls();
     void refreshThemeFromPreference();
     bool systemUsesDarkTheme() const;
     void applyLanguage(UiLanguage language);
@@ -205,14 +254,20 @@ private:
     void appendRealtimeLog(const QString &data);
     void stopRealtimeLog();
     QString realtimeLogDirectory() const;
+    QString configuredLogDirectory() const;
     void setConnectionState(bool connected);
     void setBaudRate(int index);
     void setStopBits(int index);
     void setParity(int index);
     void setDataBits(int index);
     void setFlowControl(int index);
+    bool selectedBaudRate(qint32 *baudRate) const;
+    bool writePendingData();
     QString formatReceiveData(const QByteArray &data, bool isAscii);
     QString formatSendData(const QByteArray &data, bool isAscii);
+    QString receiveTextEncoding() const;
+    QString sendTextEncoding() const;
+    QByteArray selectedLineEnding() const;
     void sendData(const QString &input, TimelineSource source, bool showInDisplay = true);
     void queueDisplayText(const QString &text);
     void appendDisplayText(const QString &text);
@@ -226,6 +281,13 @@ private:
     void updateTimelineSummary();
     int selectedTimelineRow() const;
     void resizeTimelineColumns();
+    void applyTerminalFont(const QFont &font);
+    void setFileTransferUi(bool active);
+    XmodemTransfer::Mode chooseXmodemMode(bool *accepted) const;
+    void setTerminalMode(bool fullScreen);
+    bool sendTerminalKey(int key, const QString &text);
+    void syncFullTerminalControls();
+    void flashActivity(QLabel *indicator, QTimer *timer);
 
     quint64 recCount;
     quint64 sendCount;

@@ -25,16 +25,28 @@ DEFINES += QT_DEPRECATED_WARNINGS
 
 SOURCES += main.cpp\
     aboutdialog.cpp \
+    displaybuffer.cpp \
     mainwindow.cpp \
     serialcodec.cpp \
+    serialdisplayformatter.cpp \
+    serialportselection.cpp \
+    terminalhighlighter.cpp \
+    textcodec.cpp \
+    xmodemtransfer.cpp \
     timeline.cpp \
     uilanguage.cpp
 
 HEADERS  += \
     global.h \
     aboutdialog.h \
+    displaybuffer.h \
     mainwindow.h \
     serialcodec.h \
+    serialdisplayformatter.h \
+    serialportselection.h \
+    terminalhighlighter.h \
+    textcodec.h \
+    xmodemtransfer.h \
     timeline.h \
     uilanguage.h
 

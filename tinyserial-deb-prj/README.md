@@ -116,7 +116,7 @@ If the application doesn't appear in the applications menu:
 ## Package Information
 
 - **Package Name:** tinyserial
-- **Version:** 1.5.1
+- **Version:** 2.1.0
 - **Architecture:** amd64
 - **Maintainer:** Carlos Wei <carlos.wei.hk@gmail.com>
 - **Homepage:** https://github.com/carloscn/tinyserial

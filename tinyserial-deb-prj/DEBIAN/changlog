@@ -1,3 +1,15 @@
+tinyserial (2.1.0) unstable; urgency=medium
+
+  * Add full terminal mode: direct keyboard input, visible caret and an always-dark terminal surface
+  * Keep port, baud rate, data/stop bits, parity, flow control and logging controls available in full terminal mode
+  * Add configurable terminal font and retained-text cache size
+  * Add RX/TX activity indicators and red/green status-word highlighting for English, Chinese and Spanish output
+  * Add configurable text encoding, C-style escape sequences and send line endings
+  * Add XMODEM checksum/CRC/1K and YMODEM send/receive file transfer
+  * Add persistent real-time logging with a configurable log directory and File-menu access
+
+ -- Carlos Wei <carlos.wei.hk@gmail.com>  Fri, 23 Oct 2026 18:45:00 +0200
+
 tinyserial (2.0.0) unstable; urgency=medium
 
   * Redesign the interface with disciplined responsive layouts

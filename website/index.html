@@ -7,7 +7,7 @@
 <meta name="description" data-i18n-content="meta.desc" content="TinySerial is an open-source Qt serial port debugging tool for Linux, Windows and macOS. ASCII and HEX, auto-repeat, timestamps, logging, hot-plug detection.">
 <meta property="og:title" content="TinySerial">
 <meta property="og:description" data-i18n-content="meta.og" content="A small, fast serial port terminal for embedded developers.">
-<meta property="og:image" content="https://tinyserial.mltz.tech/assets/screenshot-light.webp">
+<meta property="og:image" content="https://tinyserial.mltz.tech/assets/v2.1-light.webp">
 <meta name="theme-color" content="#0e1113" media="(prefers-color-scheme: dark)">
 <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
 <link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
@@ -249,7 +249,7 @@ footer a:hover { color: var(--ink); }
 <main>
   <div class="hero wrap">
     <a class="badge" href="https://github.com/carloscn/tinyserial/releases/latest">
-      <span class="dot"></span><span data-i18n="hero.badge">v2.0.0 is out · open source, MPL-2.0</span>
+      <span class="dot"></span><span data-i18n="hero.badge">v2.1.0 is out · open source, MPL-2.0</span>
     </a>
     <h1 data-i18n-html="hero.title">The serial terminal that <em>stays out of your way.</em></h1>
     <p class="lead" data-i18n="hero.lead">TinySerial is a small, fast desktop tool for talking to microcontrollers, boards and modems over UART. Plug in, pick a baud rate, and read the boot log.</p>
@@ -271,8 +271,8 @@ footer a:hover { color: var(--ink); }
 
     <figure class="shot" style="margin-bottom:0">
       <picture>
-        <source srcset="/assets/screenshot-dark.webp" media="(prefers-color-scheme: dark)">
-        <img src="/assets/screenshot-light.webp" width="1238" height="839" alt="TinySerial 2.0 on Ubuntu showing the boot log of an STM32 board connected over ST-Link">
+        <source srcset="/assets/v2.1-dark.webp" media="(prefers-color-scheme: dark)">
+        <img src="/assets/v2.1-light.webp" width="1242" height="960" alt="TinySerial 2.1 on Ubuntu showing the serial debugging interface">
       </picture>
     </figure>
   </div>
@@ -325,6 +325,22 @@ footer a:hover { color: var(--ink); }
     </div>
   </section>
 
+  <section style="padding-top:0" id="v210">
+    <div class="wrap">
+      <div class="eyebrow" data-i18n="v210.eyebrow">New in v2.1.0</div>
+      <h2 data-i18n="v210.title">A terminal workflow built for the bench.</h2>
+      <p class="sub" data-i18n="v210.sub">A keyboard-first terminal, reliable logging and file transfer—without hiding the serial settings you need.</p>
+      <div class="features">
+        <div class="feature"><h3 data-i18n="v210.f1.t">Full terminal mode</h3><p data-i18n="v210.f1.d">Type directly to the device with a visible caret and common control keys. Keep the port and connection controls in view.</p></div>
+        <div class="feature"><h3 data-i18n="v210.f2.t">Terminal that looks like one</h3><p data-i18n="v210.f2.d">A fixed dark, monospace terminal surface in either app theme, with configurable font and retained-text cache.</p></div>
+        <div class="feature"><h3 data-i18n="v210.f3.t">See device status faster</h3><p data-i18n="v210.f3.d">RX/TX lamps show live activity. Error and failure words are red; OK and success words are green.</p></div>
+        <div class="feature"><h3 data-i18n="v210.f4.t">Protocol-accurate text</h3><p data-i18n="v210.f4.d">Choose common legacy encodings, C-style escape sequences and the line ending appended to text sends.</p></div>
+        <div class="feature"><h3 data-i18n="v210.f5.t">Logging you can find</h3><p data-i18n="v210.f5.d">Start real-time logging from either mode, remember a custom directory and open it directly from the File menu.</p></div>
+        <div class="feature"><h3 data-i18n="v210.f6.t">XMODEM and YMODEM</h3><p data-i18n="v210.f6.d">Send or receive files with XMODEM checksum, CRC or 1K, plus YMODEM, with progress and cancellation.</p></div>
+      </div>
+    </div>
+  </section>
+
   <section style="padding-top:0">
     <div class="wrap split">
       <div>
@@ -338,8 +354,8 @@ footer a:hover { color: var(--ink); }
         </ul>
       </div>
       <picture>
-        <source srcset="/assets/screenshot-light.webp" media="(prefers-color-scheme: dark)">
-        <img src="/assets/screenshot-dark.webp" width="1238" height="839" loading="lazy" alt="TinySerial 2.0 on Ubuntu in the other color theme" style="border-radius:12px;border:1px solid var(--line);box-shadow:var(--shadow);height:auto">
+        <source srcset="/assets/v2.1-light.webp" media="(prefers-color-scheme: dark)">
+        <img src="/assets/v2.1-dark.webp" width="1242" height="960" loading="lazy" alt="TinySerial 2.1 on Ubuntu in dark theme" style="border-radius:12px;border:1px solid var(--line);box-shadow:var(--shadow);height:auto">
       </picture>
     </div>
   </section>
@@ -377,14 +393,14 @@ footer a:hover { color: var(--ink); }
       </div>
 
       <div class="deb" data-panel="deb" hidden>
-        <p data-i18n-html="inst.deb">Prefer not to add an apt repository? Download the <code>.deb</code> for your Ubuntu release from GitHub Releases, for example <code>tinyserial_2.0.0_ubuntu24.04_amd64.deb</code> on 24.04, and install it with apt so the Qt libraries come along.</p>
+        <p data-i18n-html="inst.deb">Prefer not to add an apt repository? Download the <code>.deb</code> for your Ubuntu release from GitHub Releases, for example <code>tinyserial_2.1.0_ubuntu24.04_amd64.deb</code> on 24.04, and install it with apt so the Qt libraries come along.</p>
         <a class="btn" href="https://github.com/carloscn/tinyserial/releases/latest">
           <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0l-4-4m4 4l4-4M4 17h12"/></svg>
           <span data-i18n="inst.debbtn">Download from GitHub Releases</span>
         </a>
         <div class="code">
           <button class="copy" type="button" data-i18n="copy">Copy</button>
-<pre>sudo apt install ./tinyserial_2.0.0_ubuntu24.04_amd64.deb
+<pre>sudo apt install ./tinyserial_2.1.0_ubuntu24.04_amd64.deb
 sudo usermod -a -G dialout "$USER"</pre>
         </div>
       </div>

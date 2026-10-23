@@ -80,6 +80,12 @@ cleanup() { rm -rf "$STAGE"; }
 trap cleanup EXIT
 cp -a "$DEB_DIR"/. "$STAGE/"
 rm -f "$STAGE/README.md"
+BASE_VERSION="$(sed -n 's/^#define APP_VERSION "\([^"]*\)"/\1/p' "$SCRIPT_DIR/appversion.h")"
+if [ -z "$BASE_VERSION" ]; then
+    echo "Error: APP_VERSION is missing from appversion.h" >&2
+    exit 1
+fi
+sed -i "s/^Version: @APP_VERSION@$/Version: ${BASE_VERSION}/" "$STAGE/DEBIAN/control"
 chmod 755 "$STAGE/DEBIAN/postinst" "$STAGE/DEBIAN/postrm" "$STAGE/DEBIAN/prerm" \
     "$STAGE/opt/tinyserial/tinyserial"
 # Spare copies survive the pre-1.5.1 postrm, which deletes /opt/tinyserial,

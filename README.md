@@ -9,13 +9,39 @@ Website: https://tinyserial.mltz.tech
 ## Features
 
 - Port list refreshes when a USB-serial adapter is plugged in or removed
-- ASCII or HEX, chosen separately for sending and receiving
+- Text or HEX, chosen separately for sending and receiving; Text supports UTF-8, GB18030, GBK, GB2312, Big5, Shift-JIS, EUC-KR, ISO-8859-1 and Windows-1252
+- Optional C-style escape sequences (`\\n`, `\\r`, `\\t`, `\\xHH`) and a configurable send line ending
 - Repeat sending at a fixed interval in milliseconds
 - Optional timestamps and echo of sent data
 - Save the session to a log file, or log to a file continuously while it runs
 - Timeline tab: every received line, send and connection event with millisecond times, the delay before the device answered a send, filters and search, and CSV or JSON Lines export
 - Standard or custom baud rates, data bits, parity, stop bits and flow control
 - Light and dark themes; English, Chinese and Spanish interface
+- Full terminal mode for keyboard-driven serial work, with the selected port, baud rate, data/stop bits, parity, flow control and logging controls kept visible
+- A fixed dark terminal surface in full terminal mode, with a configurable monospace font, terminal-cache limit, RX/TX activity lights and status-word highlighting
+- XMODEM (checksum, CRC and 1K) and YMODEM send/receive file transfer
+
+## What's new in v2.1.0
+
+### Full terminal workflow
+
+Switch between the normal **Debug mode** and a keyboard-first **Full terminal mode**. Full terminal mode behaves like a dedicated serial console: typed characters are sent directly to the connected port, including common control characters such as `Ctrl+A` through `Ctrl+Z`, `Enter`, `Tab`, `Backspace` and `Esc`. The terminal keeps its own dark visual surface regardless of the application theme, with a visible caret and a focused, monospace reading area.
+
+The terminal toolbar keeps the connection controls available instead of forcing a return to the debug screen: port, baud rate, data bits, stop bits, parity, flow control, connect/disconnect, real-time logging and opening the log directory are all available in one place.
+
+### More useful terminal output
+
+The terminal font and retained text cache can be configured from the **View** menu. RX and TX lamps in the status bar flash orange when bytes actually arrive or leave the serial port. Common status words are highlighted without colouring the rest of a line: failures such as `error`, `failed`, `timeout`, `失败` and `错误` are red; successful states such as `OK`, `success`, `ready`, `成功` and `完成` are green. English, Chinese and common Spanish status words are recognised.
+
+### Text, HEX and logging controls
+
+Text sending now supports UTF-8, GB18030, GBK, GB2312, Big5, Shift-JIS, EUC-KR, ISO-8859-1 and Windows-1252. Optional C-style escapes (`\\n`, `\\r`, `\\t`, `\\xHH`) and a selectable line ending make it practical to reproduce device protocols exactly. HEX input is validated before transmission.
+
+Real-time logging can be enabled directly from either mode. On packaged Linux installations it uses `/var/log/tinyserial` when writable, otherwise a per-user log directory; a user-selected directory is remembered and can be opened from the File menu.
+
+### File transfer
+
+The File menu can now send or receive with XMODEM checksum, XMODEM-CRC, XMODEM-1K and YMODEM. Transfer progress, cancellation and protocol traffic are handled without mixing protocol bytes into normal terminal output.
 
 ![TinySerial on Ubuntu, dark theme](img/tinyserial-dark.png)
 
@@ -75,7 +101,7 @@ Requirements: Qt 5.12 or newer, and permission to open serial devices (`dialout`
 
 1. Pick the port. The list follows hot-plug events; Refresh rescans at once.
 2. Set baud rate, data bits, stop bits, parity and flow control, then Connect.
-3. Type in the send box, choose ASCII or HEX, and press Send, or enable Repeat send.
+3. Type in the send box, choose Text or HEX, and press Send, or enable Repeat send. In Text mode, choose the encoding, optionally enable escape sequences, and select a line ending to append.
 4. Received data appears in the Terminal tab. Pause stops the display; data keeps arriving.
 5. File > Save Log File exports the session.
 

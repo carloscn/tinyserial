@@ -22,9 +22,9 @@ fi
 # shellcheck disable=SC1091
 . /etc/os-release
 ARCH="$(dpkg --print-architecture)"
-VERSION="$(awk -F': ' '/^Version:/{print $2; exit}' tinyserial-deb-prj/DEBIAN/control)"
+VERSION="$(sed -n 's/^#define APP_VERSION "\([^"]*\)"/\1/p' appversion.h)"
 if [ -z "$VERSION" ]; then
-    echo "Version is missing from tinyserial-deb-prj/DEBIAN/control" >&2
+    echo "APP_VERSION is missing from appversion.h" >&2
     exit 1
 fi
 
@@ -32,7 +32,6 @@ BUILD_DIR="$ROOT/build"
 rm -rf "$BUILD_DIR"
 mkdir -p "$BUILD_DIR"
 BASE_VERSION="${VERSION%%+*}"
-printf '#define APP_VERSION "%s"\n' "$BASE_VERSION" > "$ROOT/appversion.h"
 
 echo "Compiling with $QMAKE"
 (

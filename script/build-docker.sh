@@ -11,7 +11,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-VERSION="$(awk -F': ' '/^Version:/{print $2; exit}' tinyserial-deb-prj/DEBIAN/control)"
+VERSION="$(sed -n 's/^#define APP_VERSION "\([^"]*\)"/\1/p' appversion.h)"
 VERSION="${VERSION%%+*}"
 if [ -n "${ONLY_RELEASES:-}" ]; then
     # shellcheck disable=SC2206

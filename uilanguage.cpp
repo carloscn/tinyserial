@@ -1,6 +1,7 @@
 #include "uilanguage.h"
 
 #include <QLatin1String>
+#include <QHash>
 
 namespace {
 struct Translation {
@@ -32,6 +33,15 @@ const Translation translations[] = {
     {"connect", "Connect", "连接", "Conectar"},
     {"disconnect", "Disconnect", "断开", "Desconectar"},
     {"receive", "Receive", "接收", "Recepción"},
+    {"text_mode", "Text", "文本", "Texto"},
+    {"hex_mode", "Hex", "十六进制", "Hex"},
+    {"text_encoding", "Encoding", "编码", "Codificación"},
+    {"escape_sequences", "Escape sequences", "转义序列", "Secuencias de escape"},
+    {"append_line_ending", "Append line ending", "追加行结束符", "Añadir fin de línea"},
+    {"line_ending_none", "None", "无", "Ninguno"},
+    {"line_ending_lf", "LF (\\n)", "LF (\\n)", "LF (\\n)"},
+    {"line_ending_crlf", "CRLF (\\r\\n)", "CRLF (\\r\\n)", "CRLF (\\r\\n)"},
+    {"line_ending_cr", "CR (\\r)", "CR (\\r)", "CR (\\r)"},
     {"word_wrap", "Word wrap", "自动换行", "Ajuste de línea"},
     {"display_sent", "Show sent data", "显示发送数据", "Mostrar datos enviados"},
     {"display_time", "Show timestamp", "显示时间戳", "Mostrar marca de tiempo"},
@@ -59,8 +69,34 @@ const Translation translations[] = {
     {"plotting", "Plotting", "绘图", "Gráficas"},
     {"plotting_future", "Plotting will be available in a future release.", "绘图功能将在后续版本中提供。", "Las gráficas estarán disponibles en una versión futura."},
     {"file", "File", "文件", "Archivo"},
+    {"view", "View", "视图", "Vista"},
     {"about", "About", "关于", "Acerca de"},
     {"save_log", "Save log file", "保存日志", "Guardar registro"},
+    {"open_log_folder", "Open log folder", "打开日志目录", "Abrir carpeta de registros"},
+    {"open_log_folder_failed", "Could not open the log folder:\n%1", "无法打开日志目录：\n%1", "No se pudo abrir la carpeta de registros:\n%1"},
+    {"terminal_cache_size", "Terminal cache size…", "终端缓存大小…", "Tamaño de caché del terminal…"},
+    {"terminal_cache_size_label", "Keep terminal text (MiB):", "保留终端文本（MiB）：", "Conservar texto del terminal (MiB):"},
+    {"terminal_font", "Terminal font…", "终端字体…", "Fuente del terminal…"},
+    {"debug_mode", "Debug mode", "调试模式", "Modo de depuración"},
+    {"full_terminal_mode", "Full terminal mode", "全终端模式", "Modo de terminal completo"},
+    {"terminal_mode_tag", "Terminal", "终端", "Terminal"},
+    {"receive_activity", "Receive activity", "接收活动", "Actividad de recepción"},
+    {"send_activity", "Send activity", "发送活动", "Actividad de envío"},
+    {"realtime_log_on", "Logging on", "正在记录", "Registro activo"},
+    {"file_transfer", "File transfer", "文件传输", "Transferencia de archivos"},
+    {"send_file", "Send file…", "发送文件…", "Enviar archivo…"},
+    {"receive_file", "Receive file…", "接收文件…", "Recibir archivo…"},
+    {"cancel_file_transfer", "Cancel file transfer", "取消文件传输", "Cancelar transferencia"},
+    {"file_transfer_protocol", "Protocol:", "协议：", "Protocolo:"},
+    {"xmodem_checksum", "XMODEM (checksum)", "XMODEM（校验和）", "XMODEM (suma de comprobación)"},
+    {"xmodem_crc", "XMODEM-CRC", "XMODEM-CRC", "XMODEM-CRC"},
+    {"xmodem_1k", "XMODEM-1K", "XMODEM-1K", "XMODEM-1K"},
+    {"ymodem", "YMODEM", "YMODEM", "YMODEM"},
+    {"file_transfer_connect_first", "Connect a serial port before starting a file transfer.", "请先连接串口再开始文件传输。", "Conecte un puerto serie antes de iniciar una transferencia."},
+    {"file_transfer_busy", "A file transfer owns the serial port until it finishes or is cancelled.", "文件传输期间串口由传输任务独占。", "La transferencia de archivos controla el puerto serie hasta finalizar o cancelarse."},
+    {"file_transfer_started", "File transfer started: %1", "文件传输已开始：%1", "Transferencia iniciada: %1"},
+    {"file_transfer_progress", "Sending: %1 / %2 bytes", "正在发送：%1 / %2 字节", "Enviando: %1 / %2 bytes"},
+    {"file_transfer_received", "Received: %1 bytes", "已接收：%1 字节", "Recibido: %1 bytes"},
     {"about_tinyserial", "About TinySerial", "关于 TinySerial", "Acerca de TinySerial"},
     {"about_multibeans", "About MULTIBEANS", "关于 MULTIBEANS", "Acerca de MULTIBEANS"},
     {"about_multibeans_body", "TinySerial is part of the MULTIBEANS project.\nhttps://github.com/carloscn/tinyserial", "TinySerial 是 MULTIBEANS 项目的一部分。\nhttps://github.com/carloscn/tinyserial", "TinySerial forma parte del proyecto MULTIBEANS.\nhttps://github.com/carloscn/tinyserial"},
@@ -93,6 +129,8 @@ const Translation translations[] = {
     {"port_disconnected", "Serial port %1 was disconnected", "串口 %1 已断开", "El puerto serie %1 se desconectó"},
     {"no_connection", "No serial port connected", "未连接串口", "No hay ningún puerto serie conectado"},
     {"write_failed", "Failed to write data to the serial port.", "串口数据写入失败。", "No se pudieron escribir datos en el puerto serie."},
+    {"text_encoding_failed", "The selected encoding cannot represent this text.", "所选编码无法表示这段文本。", "La codificación seleccionada no puede representar este texto."},
+    {"invalid_escape", "The text contains an invalid escape sequence.", "文本包含无效的转义序列。", "El texto contiene una secuencia de escape no válida."},
     {"empty_log", "There is no terminal data to save.", "没有可保存的终端数据。", "No hay datos de terminal para guardar."},
     {"save_log_as", "Save log file", "保存日志文件", "Guardar registro"},
     {"text_files", "Text files (*.txt);;All files (*.*)", "文本文件 (*.txt);;所有文件 (*.*)", "Archivos de texto (*.txt);;Todos los archivos (*.*)"},
@@ -173,14 +211,23 @@ QString uiLanguageCode(UiLanguage language)
 
 QString uiText(UiLanguage language, const char *key)
 {
-    for (const Translation &entry : translations) {
-        if (QLatin1String(entry.key) != QLatin1String(key))
-            continue;
-        switch (language) {
-        case UiLanguage::Chinese: return QString::fromUtf8(entry.chinese);
-        case UiLanguage::Spanish: return QString::fromUtf8(entry.spanish);
-        case UiLanguage::English: return QString::fromUtf8(entry.english);
-        }
+    static const QHash<QString, const Translation *> index = [] {
+        QHash<QString, const Translation *> result;
+        result.reserve(static_cast<int>(sizeof(translations) / sizeof(translations[0])));
+        for (const Translation &entry : translations)
+            result.insert(QString::fromLatin1(entry.key), &entry);
+        return result;
+    }();
+
+    const auto found = index.constFind(QString::fromLatin1(key));
+    if (found == index.cend())
+        return QString::fromLatin1(key);
+
+    const Translation &entry = **found;
+    switch (language) {
+    case UiLanguage::Chinese: return QString::fromUtf8(entry.chinese);
+    case UiLanguage::Spanish: return QString::fromUtf8(entry.spanish);
+    case UiLanguage::English: return QString::fromUtf8(entry.english);
     }
     return QString::fromLatin1(key);
 }

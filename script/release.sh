@@ -9,7 +9,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT"
 
-VERSION="$(awk -F': ' '/^Version:/{print $2; exit}' tinyserial-deb-prj/DEBIAN/control)"
+VERSION="$(sed -n 's/^#define APP_VERSION "\([^"]*\)"/\1/p' appversion.h)"
 VERSION="${VERSION%%+*}"
 TAG="v${VERSION}"
 mapfile -t DEBS < <(find "$ROOT/dist" -maxdepth 1 -type f -name "tinyserial_${VERSION}_ubuntu*.deb" | sort)
