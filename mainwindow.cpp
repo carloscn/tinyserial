@@ -28,6 +28,7 @@
 #include <QFileInfo>
 #include <QFormLayout>
 #include <QGridLayout>
+#include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QHeaderView>
 #include <QInputDialog>
@@ -158,7 +159,8 @@ MainWindow::MainWindow(QWidget *parent) :
     configureTextFormatControls();
     setWindowTitle(QStringLiteral("tinySerial v") + QLatin1String(APP_VERSION));
     setMinimumSize(860, 600);
-    const QSize available = screen() ? screen()->availableGeometry().size() : QSize(1240, 800);
+    const QScreen *primaryScreen = QGuiApplication::primaryScreen();
+    const QSize available = primaryScreen ? primaryScreen->availableGeometry().size() : QSize(1240, 800);
     resize(qMin(1240, qMax(860, available.width() - 80)),
            qMin(920, qMax(600, available.height() - 24)));
     const QSettings settings(QStringLiteral("MULTIBEANS"), QStringLiteral("TinySerial"));
