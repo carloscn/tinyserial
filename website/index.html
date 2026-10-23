@@ -1,0 +1,498 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title data-i18n="meta.title">TinySerial — a small, fast serial port terminal</title>
+<meta name="description" data-i18n-content="meta.desc" content="TinySerial is an open-source Qt serial port debugging tool for Linux, Windows and macOS. ASCII and HEX, auto-repeat, timestamps, logging, hot-plug detection.">
+<meta property="og:title" content="TinySerial">
+<meta property="og:description" data-i18n-content="meta.og" content="A small, fast serial port terminal for embedded developers.">
+<meta property="og:image" content="https://tinyserial.mltz.tech/assets/screenshot-light.webp">
+<meta name="theme-color" content="#0e1113" media="(prefers-color-scheme: dark)">
+<meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+<link rel="icon" href="/assets/favicon.svg" type="image/svg+xml">
+<!-- i18n:links -->
+<style>
+/* Reddit palette: orange #ff4500 / #d93900, ink #0f1a1c, greys #f6f8f9 #e5ebee #576f76, dark #0e1113 */
+:root {
+  --bg: #ffffff;
+  --bg-2: #f6f8f9;
+  --card: #ffffff;
+  --ink: #0f1a1c;
+  --ink-2: #2a3c42;
+  --ink-3: #576f76;
+  --line: #e5ebee;
+  --accent: #ff4500;
+  --accent-btn: #d93900;
+  --accent-btn-hover: #ae2c00;
+  --accent-ink: #ffffff;
+  --rx: #01a816;
+  --code-bg: #0e1113;
+  --code-ink: #f2f4f5;
+  --code-dim: #8ba2ad;
+  --shadow: 0 1px 2px rgba(15,26,28,.05), 0 12px 40px -12px rgba(15,26,28,.2);
+  --radius: 14px;
+  --mono: ui-monospace, "JetBrains Mono", "SF Mono", "Cascadia Code", Menlo, Consolas, monospace;
+  --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "Inter", "PingFang SC", "Hiragino Sans GB", "Noto Sans CJK SC", "Microsoft YaHei", sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1113;
+    --bg-2: #13181b;
+    --card: #181c1f;
+    --ink: #f2f4f5;
+    --ink-2: #b7cad4;
+    --ink-3: #8ba2ad;
+    --line: #2a3236;
+    --accent: #ff4500;
+    --accent-btn: #d93900;
+    --accent-btn-hover: #ff4500;
+    --accent-ink: #ffffff;
+    --rx: #01a816;
+    --code-bg: #0b0e10;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 20px 60px -20px rgba(0,0,0,.7);
+  }
+}
+
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 16px/1.6 var(--sans);
+  -webkit-font-smoothing: antialiased;
+}
+a { color: inherit; }
+img { max-width: 100%; display: block; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+@media (max-width: 600px) { .wrap { padding: 0 16px; } }
+
+/* nav */
+header {
+  position: sticky; top: 0; z-index: 10;
+  backdrop-filter: saturate(1.4) blur(14px);
+  -webkit-backdrop-filter: saturate(1.4) blur(14px);
+  background: color-mix(in srgb, var(--bg) 78%, transparent);
+  border-bottom: 1px solid transparent;
+  transition: border-color .2s;
+}
+header.scrolled { border-bottom-color: var(--line); }
+nav { display: flex; align-items: center; gap: 28px; height: 64px; }
+.brand { display: flex; align-items: center; gap: 10px; font-weight: 650; letter-spacing: -.01em; text-decoration: none; font-size: 17px; }
+.brand svg { width: 28px; height: 28px; }
+.nav-links { display: flex; gap: 22px; margin-left: auto; align-items: center; font-size: 14.5px; }
+.nav-links a { text-decoration: none; color: var(--ink-2); }
+.nav-links a:hover { color: var(--ink); }
+.lang {
+  font: inherit; font-size: 13px; color: var(--ink-2);
+  background: none; border: 1px solid var(--line); border-radius: 999px;
+  padding: 4px 26px 4px 11px; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23576f76' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 8l4 4 4-4'/%3E%3C/svg%3E") right 8px center/12px no-repeat;
+}
+.lang option { color: initial; }
+.lang:hover { color: var(--ink); border-color: var(--ink-3); }
+.gh { display: inline-flex; align-items: center; gap: 6px; }
+.gh svg { width: 18px; height: 18px; }
+@media (max-width: 640px) { .nav-links .hide-sm { display: none; } }
+
+/* hero */
+.hero { padding: 88px 0 40px; text-align: center; }
+.badge {
+  display: inline-flex; align-items: center; gap: 8px;
+  font-size: 13px; color: var(--ink-2);
+  border: 1px solid var(--line); background: var(--card);
+  padding: 5px 12px 5px 8px; border-radius: 999px; text-decoration: none;
+}
+.badge .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--rx); box-shadow: 0 0 0 3px color-mix(in srgb, var(--rx) 22%, transparent); }
+h1 {
+  font-size: clamp(38px, 6.4vw, 72px);
+  line-height: 1.03; letter-spacing: -.035em; font-weight: 720;
+  margin: 26px auto 20px; max-width: 14ch;
+}
+h1 em { font-style: normal; color: var(--accent); }
+:lang(zh) h1 { max-width: 9.5em; letter-spacing: -.01em; }
+:lang(zh) h2 { letter-spacing: 0; }
+:lang(zh) .final h2 { max-width: none; }
+:lang(es) h1 { max-width: 17ch; }
+:lang(es) .final h2 { max-width: 24ch; }
+.lead { font-size: clamp(17px, 2vw, 20px); color: var(--ink-2); max-width: 600px; margin: 0 auto; }
+.cta { display: flex; gap: 12px; justify-content: center; margin-top: 34px; flex-wrap: wrap; }
+.btn {
+  display: inline-flex; align-items: center; gap: 8px;
+  padding: 12px 20px; border-radius: 10px; font-weight: 560; font-size: 15px;
+  text-decoration: none; border: 1px solid var(--line); background: var(--card);
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+}
+.btn:hover { transform: translateY(-1px); border-color: var(--ink-3); }
+.btn.primary { background: var(--accent-btn); color: var(--accent-ink); border-color: var(--accent-btn); }
+.btn.primary:hover { background: var(--accent-btn-hover); border-color: var(--accent-btn-hover); box-shadow: 0 8px 24px -10px var(--accent-btn); }
+.btn svg { width: 17px; height: 17px; }
+
+/* waveform */
+.wave { margin: 56px auto 0; max-width: 760px; }
+.wave svg { width: 100%; height: auto; overflow: visible; }
+.wave .trace { fill: none; stroke: var(--accent); stroke-width: 2; stroke-linejoin: round; }
+.wave .grid { stroke: var(--line); stroke-width: 1; }
+.wave text { font: 11px var(--mono); fill: var(--ink-3); }
+.wave text.ch { fill: var(--ink-2); font-weight: 600; font-size: 12px; }
+.wave .caption { font: 12px var(--mono); color: var(--ink-3); margin-top: 8px; text-align: center; }
+@media (prefers-reduced-motion: no-preference) {
+  .wave .trace { stroke-dasharray: var(--len); stroke-dashoffset: var(--len); animation: draw 2.6s cubic-bezier(.6,.1,.3,1) .3s forwards; }
+  @keyframes draw { to { stroke-dashoffset: 0; } }
+}
+
+/* screenshot */
+.shot { margin: 56px auto 0; max-width: 1040px; position: relative; }
+.shot::before {
+  content: ""; position: absolute; inset: 8% 6% -6%; z-index: -1;
+  background: radial-gradient(60% 60% at 50% 40%, color-mix(in srgb, var(--accent) 30%, transparent), transparent 70%);
+  filter: blur(40px); opacity: .55;
+}
+.shot img { border-radius: 12px; box-shadow: var(--shadow); border: 1px solid var(--line); width: 100%; height: auto; }
+
+/* sections */
+section { padding: 96px 0; }
+.eyebrow { font: 600 12.5px var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+h2 { font-size: clamp(28px, 3.6vw, 42px); letter-spacing: -.025em; line-height: 1.1; margin: 12px 0 14px; font-weight: 700; }
+.sub { color: var(--ink-2); max-width: 560px; margin: 0; font-size: 17px; }
+
+.features { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; margin-top: 48px; }
+@media (max-width: 880px) { .features { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 560px) { .features { grid-template-columns: 1fr; } }
+.feature { background: var(--card); padding: 28px 26px 30px; }
+.feature .ico { width: 36px; height: 36px; border-radius: 9px; display: grid; place-items: center; background: color-mix(in srgb, var(--accent) 12%, transparent); color: var(--accent); margin-bottom: 18px; }
+.feature .ico svg { width: 19px; height: 19px; }
+.feature h3 { margin: 0 0 6px; font-size: 16.5px; letter-spacing: -.01em; }
+.feature p { margin: 0; color: var(--ink-2); font-size: 15px; }
+
+/* specs strip */
+.specs { display: grid; grid-template-columns: repeat(4, 1fr); gap: 24px; margin-top: 56px; }
+@media (max-width: 760px) { .specs { grid-template-columns: repeat(2, 1fr); } }
+.spec { border-top: 1px solid var(--line); padding-top: 18px; }
+.spec b { display: block; font: 650 26px/1.2 var(--sans); letter-spacing: -.02em; }
+.spec span { color: var(--ink-3); font-size: 14px; }
+
+/* platforms */
+.split { display: grid; grid-template-columns: 1fr 1.25fr; gap: 56px; align-items: center; }
+@media (max-width: 880px) { .split { grid-template-columns: 1fr; gap: 36px; } }
+.checks { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 12px; }
+.checks li { display: flex; gap: 12px; color: var(--ink-2); }
+.checks li::before { content: ""; flex: none; width: 18px; height: 18px; margin-top: 3px; border-radius: 50%; background: color-mix(in srgb, var(--rx) 16%, transparent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2301a816' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 10.5l3 3 6-7'/%3E%3C/svg%3E") center/14px no-repeat; }
+.checks b { color: var(--ink); font-weight: 600; }
+
+/* install */
+.install { background: var(--bg-2); border-block: 1px solid var(--line); }
+.tabs { display: inline-flex; gap: 4px; padding: 4px; background: var(--card); border: 1px solid var(--line); border-radius: 11px; margin: 36px 0 14px; flex-wrap: wrap; }
+.tab { font: inherit; font-size: 14px; font-weight: 550; padding: 7px 14px; border-radius: 8px; border: 0; background: none; color: var(--ink-2); cursor: pointer; }
+.tab[aria-selected="true"] { background: var(--ink); color: var(--bg); }
+.code {
+  position: relative; background: var(--code-bg); color: var(--code-ink);
+  border-radius: var(--radius); padding: 22px 24px; overflow-x: auto;
+  font: 13.5px/1.75 var(--mono); box-shadow: var(--shadow);
+}
+.code pre { margin: 0; white-space: pre; }
+.code .c { color: var(--code-dim); }
+.code .p { color: var(--accent); user-select: none; }
+.copy {
+  position: absolute; top: 12px; right: 12px;
+  font: 500 12px var(--sans); color: var(--code-ink); cursor: pointer;
+  background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.12);
+  border-radius: 7px; padding: 5px 10px;
+}
+.copy:hover { background: rgba(255,255,255,.14); }
+.note { color: var(--ink-3); font-size: 14px; margin-top: 14px; }
+.note code, .sub code { font-family: var(--mono); font-size: .92em; background: var(--card); border: 1px solid var(--line); padding: 1px 6px; border-radius: 5px; color: var(--ink-2); }
+[hidden] { display: none !important; }
+
+/* final cta */
+.final { text-align: center; }
+.final h2 { margin-inline: auto; max-width: 18ch; }
+.final .sub { margin: 0 auto; }
+
+footer { border-top: 1px solid var(--line); padding: 32px 0 44px; color: var(--ink-3); font-size: 14px; }
+footer .wrap { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; }
+footer .links { margin-left: auto; display: flex; gap: 20px; flex-wrap: wrap; }
+footer a { text-decoration: none; }
+footer a:hover { color: var(--ink); }
+</style>
+</head>
+<body>
+
+<header id="top">
+  <div class="wrap">
+    <nav>
+      <a class="brand" href="#">
+        <svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="8" fill="var(--ink)"/><path d="M6 20h4v-8h4v8h4v-8h4v8h4" fill="none" stroke="var(--accent)" stroke-width="2.4" stroke-linejoin="round" stroke-linecap="round"/></svg>
+        TinySerial
+      </a>
+      <div class="nav-links">
+        <a class="hide-sm" href="#features" data-i18n="nav.features">Features</a>
+        <a class="hide-sm" href="#install" data-i18n="nav.install">Install</a>
+        <a class="gh" href="https://github.com/carloscn/tinyserial" aria-label="GitHub">
+          <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>
+          <span class="hide-sm">GitHub</span>
+        </a>
+        <select class="lang" id="lang" aria-label="Language">
+          <option value="en">English</option>
+          <option value="zh">中文</option>
+          <option value="es">Español</option>
+        </select>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <div class="hero wrap">
+    <a class="badge" href="https://github.com/carloscn/tinyserial/releases/latest">
+      <span class="dot"></span><span data-i18n="hero.badge">v2.0.0 is out · open source, MPL-2.0</span>
+    </a>
+    <h1 data-i18n-html="hero.title">The serial terminal that <em>stays out of your way.</em></h1>
+    <p class="lead" data-i18n="hero.lead">TinySerial is a small, fast desktop tool for talking to microcontrollers, boards and modems over UART. Plug in, pick a baud rate, and read the boot log.</p>
+    <div class="cta">
+      <a class="btn primary" href="#install">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0l-4-4m4 4l4-4M4 17h12"/></svg>
+        <span data-i18n="hero.cta1">Install on Ubuntu</span>
+      </a>
+      <a class="btn" href="https://github.com/carloscn/tinyserial">
+        <svg viewBox="0 0 16 16" fill="currentColor" aria-hidden="true"><path d="M8 .2a8 8 0 00-2.53 15.59c.4.07.55-.17.55-.38v-1.49c-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.5 7.5 0 014 0c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.2c0 .21.15.46.55.38A8 8 0 008 .2z"/></svg>
+        <span data-i18n="hero.cta2">View source</span>
+      </a>
+    </div>
+
+    <div class="wave" aria-hidden="true">
+      <svg id="wave" viewBox="0 0 760 92"></svg>
+      <div class="caption" data-i18n="hero.wave">'T' 's' on the wire · 8N1 · start bit, LSB first, stop bit</div>
+    </div>
+
+    <figure class="shot" style="margin-bottom:0">
+      <picture>
+        <source srcset="/assets/screenshot-dark.webp" media="(prefers-color-scheme: dark)">
+        <img src="/assets/screenshot-light.webp" width="1238" height="839" alt="TinySerial 2.0 on Ubuntu showing the boot log of an STM32 board connected over ST-Link">
+      </picture>
+    </figure>
+  </div>
+
+  <section id="features">
+    <div class="wrap">
+      <div class="eyebrow" data-i18n="feat.eyebrow">Features</div>
+      <h2 data-i18n="feat.title">Everything you need at the bench. Nothing you don't.</h2>
+      <p class="sub" data-i18n="feat.sub">One window, no project files, no plugins. Open it, pick a port, start reading.</p>
+
+      <div class="features">
+        <div class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6M15 2v6M6 8h12v4a6 6 0 01-12 0V8zM12 18v4"/></svg></div>
+          <h3 data-i18n="f1.t">Hot-plug detection</h3>
+          <p data-i18n="f1.d">The port list refreshes the moment a USB-serial adapter is plugged in or pulled out. An open port stays open until its device disappears.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h6M17 14l3 3-3 3"/></svg></div>
+          <h3 data-i18n="f2.t">ASCII and HEX</h3>
+          <p data-i18n="f2.d">Send and receive in either format, chosen separately for each direction. Malformed HEX is rejected before it reaches the wire.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4M3 11V9a3 3 0 013-3h15M7 22l-4-4 4-4M21 13v2a3 3 0 01-3 3H3"/></svg></div>
+          <h3 data-i18n="f3.t">Auto-repeat</h3>
+          <p data-i18n="f3.d">Fire the same frame every N milliseconds for polling, soak tests or keeping a watchdog fed.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></div>
+          <h3 data-i18n="f4.t">Timestamps and echo</h3>
+          <p data-i18n="f4.d">Stamp every line with the time it arrived and show what you sent inline, so the log reads like a conversation.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/><path d="M14 3v6h6M8 13h8M8 17h5"/></svg></div>
+          <h3 data-i18n="f5.t">Save the session</h3>
+          <p data-i18n="f5.d">Export the whole exchange to a log file to attach to a bug report, or pause the view while the data keeps flowing.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21v-7M4 10V3M12 21v-9M12 8V3M20 21v-5M20 12V3M1 14h6M9 8h6M17 16h6"/></svg></div>
+          <h3 data-i18n="f6.t">Every port setting</h3>
+          <p data-i18n="f6.d">Standard or custom baud rates, data bits, parity, stop bits and flow control, with live byte counters for each direction.</p>
+        </div>
+      </div>
+
+      <div class="specs">
+        <div class="spec"><b>Qt 5 / 6</b><span data-i18n="s1">qmake or CMake</span></div>
+        <div class="spec"><b>4</b><span data-i18n="s2">Ubuntu releases packaged</span></div>
+        <div class="spec"><b>~1.3&nbsp;MB</b><span data-i18n="s3">.deb download</span></div>
+        <div class="spec"><b>MPL-2.0</b><span data-i18n="s4">free and open source</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section style="padding-top:0">
+    <div class="wrap split">
+      <div>
+        <div class="eyebrow" data-i18n="plat.eyebrow">Cross-platform</div>
+        <h2 data-i18n="plat.title">Same tool on every desk.</h2>
+        <p class="sub" data-i18n="plat.sub">Native Qt widgets on Linux, macOS and Windows, so it looks at home wherever you flash firmware.</p>
+        <ul class="checks">
+          <li><span data-i18n-html="plat.l1"><b>Ubuntu 20.04 – 26.04</b> — signed apt packages, updates with the rest of your system</span></li>
+          <li><span data-i18n-html="plat.l2"><b>macOS and Windows</b> — build from source with qmake or CMake</span></li>
+          <li><span data-i18n-html="plat.l3"><b>Any Qt from 5.12</b> — picks Qt 6 automatically when it is installed</span></li>
+        </ul>
+      </div>
+      <picture>
+        <source srcset="/assets/screenshot-light.webp" media="(prefers-color-scheme: dark)">
+        <img src="/assets/screenshot-dark.webp" width="1238" height="839" loading="lazy" alt="TinySerial 2.0 on Ubuntu in the other color theme" style="border-radius:12px;border:1px solid var(--line);box-shadow:var(--shadow);height:auto">
+      </picture>
+    </div>
+  </section>
+
+  <section id="install" class="install">
+    <div class="wrap">
+      <div class="eyebrow" data-i18n="inst.eyebrow">Install</div>
+      <h2 data-i18n="inst.title">Up and running in one paste.</h2>
+      <p class="sub" data-i18n-html="inst.sub">The block picks the right apt suite for your Ubuntu release and adds you to the <code>dialout</code> group.</p>
+
+      <div class="tabs" role="tablist">
+        <button class="tab" role="tab" aria-selected="true" data-tab="apt">Ubuntu (apt)</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="src" data-i18n="inst.tab2">Build with qmake</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="cmake" data-i18n="inst.tab3">Build with CMake</button>
+      </div>
+
+      <div class="code" data-panel="apt">
+        <button class="copy" type="button" data-i18n="copy">Copy</button>
+<pre>(
+  . /etc/os-release
+  case "$VERSION_ID" in
+    20.04) suite=focal ;;
+    22.04) suite=jammy ;;
+    24.04) suite=noble ;;
+    26.04) suite=resolute ;;
+    *) echo "Ubuntu ${VERSION_ID:-unknown} is not a published TinySerial target." >&2; exit 1 ;;
+  esac
+  sudo curl -fsSL https://apt.mltz.tech/key.gpg -o /usr/share/keyrings/mltz.gpg
+  echo "deb [signed-by=/usr/share/keyrings/mltz.gpg] https://apt.mltz.tech ${suite} main" | sudo tee /etc/apt/sources.list.d/mltz.list
+  sudo apt-get update
+  sudo apt-get install -y tinyserial
+  sudo usermod -a -G dialout "$USER"
+)</pre>
+      </div>
+
+      <div class="code" data-panel="src" hidden>
+        <button class="copy" type="button" data-i18n="copy">Copy</button>
+<pre>sudo apt-get update
+sudo apt-get install -y build-essential qt5-qmake qtbase5-dev libqt5serialport5-dev
+git clone https://github.com/carloscn/tinyserial.git
+cd tinyserial
+qmake SerialPort.pro
+make -j"$(nproc)"
+sudo usermod -a -G dialout "$USER"
+./tinyserial</pre>
+      </div>
+
+      <div class="code" data-panel="cmake" hidden>
+        <button class="copy" type="button" data-i18n="copy">Copy</button>
+<pre>sudo apt-get install -y build-essential cmake ninja-build qtbase5-dev libqt5serialport5-dev
+git clone https://github.com/carloscn/tinyserial.git
+cd tinyserial
+cmake -S . -B build-cmake -G Ninja -DBUILD_TESTING=ON
+cmake --build build-cmake
+ctest --test-dir build-cmake --output-on-failure
+./build-cmake/tinyserial</pre>
+      </div>
+
+      <p class="note" data-i18n-html="inst.note">Log out and back in once so the <code>dialout</code> group applies, then open <b>TinySerial</b> from the application menu or run <code>tinyserial</code>.</p>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2 data-i18n="final.title">Found a bug? Want a feature?</h2>
+      <p class="sub" data-i18n="final.sub">TinySerial has been around since 2018 and is still maintained. Issues and pull requests are welcome.</p>
+      <div class="cta">
+        <a class="btn primary" href="https://github.com/carloscn/tinyserial/issues" data-i18n="final.cta1">Open an issue</a>
+        <a class="btn" href="https://github.com/carloscn/tinyserial/releases" data-i18n="final.cta2">Release notes</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>© 2018–2026 Carlos Wei · MPL-2.0</span>
+    <div class="links">
+      <a href="https://github.com/carloscn/tinyserial">GitHub</a>
+      <a href="https://apt.mltz.tech">apt.mltz.tech</a>
+      <a href="https://mltz.tech" data-i18n="foot.blog">Blog</a>
+    </div>
+  </div>
+</footer>
+
+<script>
+(function () {
+  // UART waveform for "Ts": idle high, start bit 0, 8 data bits LSB first, stop bit 1.
+  var svg = document.getElementById('wave');
+  var chars = 'Ts', bitW = 32, hi = 18, lo = 62, x = 0, d = 'M0 ' + hi, labels = '';
+  var idle = 24;
+  x = idle; d += ' H' + x;
+  function level(b) { return b ? hi : lo; }
+  var last = 1;
+  for (var c = 0; c < chars.length; c++) {
+    var code = chars.charCodeAt(c);
+    var bits = [0];
+    for (var i = 0; i < 8; i++) bits.push((code >> i) & 1);
+    bits.push(1);
+    var x0 = x;
+    bits.forEach(function (b, i) {
+      if (b !== last) d += ' V' + level(b);
+      x += bitW; d += ' H' + x; last = b;
+      var t = i === 0 ? 'S' : i === 9 ? 'P' : String(b);
+      labels += '<text x="' + (x - bitW / 2) + '" y="84" text-anchor="middle">' + t + '</text>';
+    });
+    labels += '<text class="ch" x="' + ((x0 + x) / 2) + '" y="10" text-anchor="middle">\'' + chars[c] + '\' 0x' + code.toString(16).toUpperCase() + '</text>';
+    labels += '<line class="grid" x1="' + x0 + '" x2="' + x0 + '" y1="14" y2="70" stroke-dasharray="2 3"/>';
+    x += 12; d += ' H' + x;
+  }
+  d += ' H760';
+  svg.innerHTML = labels + '<path class="trace" d="' + d + '"/>';
+  var p = svg.querySelector('.trace');
+  p.style.setProperty('--len', Math.ceil(p.getTotalLength()));
+
+  // sticky header border
+  var header = document.getElementById('top');
+  addEventListener('scroll', function () { header.classList.toggle('scrolled', scrollY > 8); }, { passive: true });
+
+  // install tabs
+  var tabs = document.querySelectorAll('.tab');
+  tabs.forEach(function (t) {
+    t.addEventListener('click', function () {
+      tabs.forEach(function (o) { o.setAttribute('aria-selected', o === t); });
+      document.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.dataset.panel !== t.dataset.tab; });
+    });
+  });
+
+  // copy buttons
+  document.querySelectorAll('.copy').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var text = b.parentNode.querySelector('pre').innerText;
+      var done = function () { var o = b.textContent; b.textContent = copied[lang]; setTimeout(function () { b.textContent = o; }, 1400); };
+      if (navigator.clipboard) navigator.clipboard.writeText(text).then(done, function () {});
+    });
+  });
+
+  // Language: each language has its own URL (built by build.py); the picker navigates between them.
+  var urls = { en: '/', zh: '/zh/', es: '/es/' };
+  var copied = { en: 'Copied', zh: '已复制', es: 'Copiado' };
+  var lang = document.documentElement.lang.slice(0, 2);
+  var picker = document.getElementById('lang');
+  var saved = null;
+  try { saved = localStorage.getItem('lang'); } catch (e) {}
+  if (lang === 'en' && !saved && location.pathname === '/') {
+    var nav = navigator.language || '';
+    var want = /^zh/i.test(nav) ? 'zh' : /^es/i.test(nav) ? 'es' : '';
+    if (want) location.replace(urls[want] + location.hash);
+  }
+  picker.value = lang;
+  picker.addEventListener('change', function () {
+    try { localStorage.setItem('lang', picker.value); } catch (e) {}
+    location.href = urls[picker.value] + location.hash;
+  });
+})();
+</script>
+</body>
+</html>

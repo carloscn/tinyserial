@@ -1,49 +1,26 @@
 # TinySerial
 
-<div align="center">
+A small, fast serial port terminal for talking to microcontrollers, boards and modems over UART. Built with Qt 5 or Qt 6.
 
-![TinySerial Logo](img/appmain-ubuntu.png)
+Website: https://tinyserial.mltz.tech
 
-**A cross-platform GUI serial port debug tool built with Qt5**
+![TinySerial on Ubuntu, light theme](img/tinyserial-light.png)
 
-[![License](https://img.shields.io/badge/license-MPL--2.0-blue.svg)](LICENSE)
-[![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey.svg)](https://github.com/carloscn/tinyserial)
-[![Qt](https://img.shields.io/badge/Qt-5.15%2B-green.svg)](https://www.qt.io/)
+## Features
 
-🌐 **Website:** [tinyserial.mltz.tech](https://tinyserial.mltz.tech/)
+- Port list refreshes when a USB-serial adapter is plugged in or removed
+- ASCII or HEX, chosen separately for sending and receiving
+- Repeat sending at a fixed interval in milliseconds
+- Optional timestamps and echo of sent data
+- Save the session to a log file, or log to a file continuously while it runs
+- Standard or custom baud rates, data bits, parity, stop bits and flow control
+- Light and dark themes; English, Chinese and Spanish interface
 
-</div>
+![TinySerial on Ubuntu, dark theme](img/tinyserial-dark.png)
 
-## 📖 Overview
+## Install on Ubuntu
 
-TinySerial is an open-source, cross-platform serial port debugging tool designed for developers and engineers who need to communicate with embedded devices, microcontrollers, and other serial devices. Built with Qt5 framework, it provides a user-friendly graphical interface for serial communication testing and debugging.
-
-### ✨ Key Features
-
-- 🔌 **Serial Port Management**: Automatic port scanning and easy connection
-- 📊 **Dual Format Support**: ASCII and HEX data transmission modes
-- 🔄 **Auto Repeat**: Configurable automatic data sending
-- 📝 **Data Logging**: Save communication logs to files
-- ⏱️ **Timestamp Display**: Optional timestamp for each message
-- 🎨 **Modern UI**: Clean and intuitive user interface
-- 🌐 **Cross-Platform**: Supports Linux and Windows
-- 🔧 **Flexible Configuration**: Customizable baud rates, parity, stop bits, and flow control
-
-## 🖼️ Screenshots
-
-### Ubuntu/Linux Interface
-
-![Ubuntu Interface](img/appmain-ubuntu.png)
-
-### macOS Interface
-
-![macOS Interface](img/appmain-mac.png)
-
-## 🚀 Quick Start
-
-### Install
-
-Paste this whole block on Ubuntu 20.04, 22.04, 24.04, or 26.04. It picks the matching apt suite. Then log out and back in, and open **TinySerial** from the application menu.
+Packages are published for Ubuntu 20.04, 22.04, 24.04 and 26.04 (amd64). Paste this block; it picks the apt suite for your release and adds you to the `dialout` group:
 
 ```bash
 (
@@ -63,11 +40,11 @@ Paste this whole block on Ubuntu 20.04, 22.04, 24.04, or 26.04. It picks the mat
 )
 ```
 
-The menu entry does not open a terminal. You can also run `tinyserial`.
+Log out and back in once so the `dialout` group applies, then open TinySerial from the application menu or run `tinyserial`.
 
-### Compile the source on Ubuntu
+## Build from source
 
-Paste this whole block. It installs the Qt 5 build packages, compiles TinySerial, and runs it.
+With qmake and Qt 5:
 
 ```bash
 sudo apt-get update
@@ -76,19 +53,12 @@ git clone https://github.com/carloscn/tinyserial.git
 cd tinyserial
 qmake SerialPort.pro
 make -j"$(nproc)"
-sudo usermod -a -G dialout "$USER"
 ./tinyserial
 ```
 
-Log out and back in before opening a serial port, so the `dialout` group applies.
-
-### CMake build (Qt 5 or Qt 6)
-
-The qmake project remains available for compatibility. New development can use
-CMake; it selects Qt 6 when installed and otherwise uses Qt 5.
+With CMake, which uses Qt 6 when it is installed and Qt 5 otherwise:
 
 ```bash
-sudo apt-get update
 sudo apt-get install -y build-essential cmake ninja-build qtbase5-dev libqt5serialport5-dev
 cmake -S . -B build-cmake -G Ninja -DBUILD_TESTING=ON
 cmake --build build-cmake
@@ -96,165 +66,75 @@ ctest --test-dir build-cmake --output-on-failure
 ./build-cmake/tinyserial
 ```
 
-### Other platforms
+Windows and macOS are not packaged; build them the same way with qmake or CMake.
 
-Windows and macOS builds are not published to the apt repository. Clone the repository and build with qmake:
+Requirements: Qt 5.12 or newer, and permission to open serial devices (`dialout` on Ubuntu).
 
-```bash
-git clone https://github.com/carloscn/tinyserial.git
-cd tinyserial
-qmake SerialPort.pro
-make
-./tinyserial
-```
+## Usage
 
-## 📋 System Requirements
+1. Pick the port. The list follows hot-plug events; Refresh rescans at once.
+2. Set baud rate, data bits, stop bits, parity and flow control, then Connect.
+3. Type in the send box, choose ASCII or HEX, and press Send, or enable Repeat send.
+4. Received data appears in the Terminal tab. Pause stops the display; data keeps arriving.
+5. File > Save Log File exports the session.
 
-- **Published packages:** Ubuntu 20.04, 22.04, 24.04, and 26.04 (amd64)
-- **Qt:** 5.12 or newer. The packages use the Qt libraries shipped by that Ubuntu release
-- **Also required:** permission to open serial devices (`dialout` on Ubuntu)
+Real-time logging writes the traffic to a file as it arrives. Packaged Linux installs use `/var/log/tinyserial`; other builds fall back to the user's application data directory when that is not writable.
 
-`gen_deb.sh` fills the package `Depends` line from the binary on the machine where the package is built. Qt already depends on X11, zlib, and GLib, so those are not listed again.
+## Troubleshooting
 
-## 🔨 Building and publishing
-
-### Package for this Ubuntu
-
-```bash
-sudo apt-get install -y qt5-qmake qtbase5-dev libqt5serialport5-dev dpkg-dev
-git clone https://github.com/carloscn/tinyserial.git
-cd tinyserial
-./script/build-deb.sh
-```
-
-The package is `dist/tinyserial_<version>_ubuntu<release>_amd64.deb`.
-
-### Package Ubuntu 20.04, 22.04, 24.04, and 26.04
-
-Docker is required. The Qt toolchain for each release is cached and reused. On a machine where `/hrom` is writable, that cache is `/hrom/tinyserial/buildkit`.
-
-```bash
-git clone https://github.com/carloscn/tinyserial.git
-cd tinyserial
-./script/build-docker.sh
-```
-
-### Publish those packages
-
-`gh` must already be logged in. This uploads `dist/tinyserial_*_ubuntu*.deb` to a GitHub Release. The release workflow copies each file to `apt.mltz.tech`. Raise `Version` in `tinyserial-deb-prj/DEBIAN/control` before a new release.
-
-```bash
-./script/release.sh
-```
-
-## 📖 Usage Guide
-
-### Basic Operations
-
-1. **Scan for Serial Ports**: The list updates when a USB serial device is plugged or unplugged. Scan refreshes it immediately.
-2. **Configure Port Settings**: Select baud rate, data bits, stop bits, parity, and flow control
-3. **Connect**: Click "Open" to establish connection
-4. **Send Data**: 
-   - Enter data in the send text area
-   - Choose ASCII or HEX format
-   - Click "Send" or enable auto-repeat
-5. **View Received Data**: Received data appears in the receive area
-6. **Save Logs**: Use "Save Log File" from the menu to export communication logs
-
-### Advanced Features
-
-- **Auto Repeat**: Enable repeat sending with configurable interval
-- **Display Options**: Toggle timestamp and send/receive indicators
-- **Pause Output**: Temporarily pause receiving data display
-- **Custom Baud Rate**: Enter custom baud rate values
-- **Real-time Logging**: Enable the checkbox to continuously write serial traffic to a log file. Packaged Linux installs default to `/var/log/tinyserial`; other builds fall back to the current user's application data directory when that location is not writable.
-
-## 🛠️ Troubleshooting
-
-### Common Issues
-
-**Q: TinySerial does not appear in the application menu**
+**TinySerial is missing from the application menu.** Reinstall it; packages older than 1.5.2 removed the menu entry while upgrading:
 
 ```bash
 sudo apt-get update
 sudo apt-get install -y --reinstall tinyserial
 ```
 
-Search for TinySerial in the application grid. A running session picks the new entry up within a few seconds. Packages older than 1.5.2 removed the menu entry while upgrading.
-
-**Q: Application won't start**
-- Install it with apt so the Qt libraries for that Ubuntu release are installed
-- Check the program: `ls -l /opt/tinyserial/tinyserial`
-
-**Q: Can't find serial ports**
+**No serial ports, or permission denied.** Add yourself to `dialout`, then log out and back in. The install block already does this.
 
 ```bash
 sudo usermod -a -G dialout "$USER"
 ```
 
-Log out and back in. The install block above already runs this command.
+**It does not start.** Install it with apt so the Qt libraries for your Ubuntu release are present, and check that `/opt/tinyserial/tinyserial` exists.
 
-**Q: Permission denied errors**
-- Run with appropriate permissions or configure udev rules for persistent access
+**HEX input is rejected.** Bytes may be separated by spaces, but each byte needs exactly two hex digits, for example `01 AB FF`.
 
-**Q: Dependency issues on Linux**
-- See the [package troubleshooting guide](tinyserial-deb-prj/README.md)
+More package details: [tinyserial-deb-prj/README.md](tinyserial-deb-prj/README.md).
 
-**Q: HEX data is rejected**
-- HEX input accepts whitespace between bytes, but every byte must have exactly two hexadecimal digits. For example: `01 AB FF`.
+## Packaging and releases
 
-## 🤝 Contributing
+Build a `.deb` for the Ubuntu you are on (output: `dist/tinyserial_<version>_ubuntu<release>_amd64.deb`):
 
-Contributions are welcome! If you find bugs or have feature requests, please:
+```bash
+sudo apt-get install -y qt5-qmake qtbase5-dev libqt5serialport5-dev dpkg-dev
+./script/build-deb.sh
+```
 
-1. Open an [issue](https://github.com/carloscn/tinyserial/issues) on GitHub
-2. Fork the repository and create a feature branch
-3. Submit a pull request with your changes
+Build packages for all four Ubuntu releases with Docker. The Qt toolchain for each release is cached; on a machine where `/hrom` is writable the cache is `/hrom/tinyserial/buildkit`.
 
-## 📝 TODO
+```bash
+./script/build-docker.sh
+```
 
-- [x] Dynamic USB device detection
-- [ ] Enhanced custom baud rate support
-- [ ] macOS version optimization
-- [ ] Data visualization and plotting
-- [ ] Script automation support
+Publish: raise `Version` in `tinyserial-deb-prj/DEBIAN/control`, then run `./script/release.sh` (needs a logged-in `gh`). It uploads `dist/tinyserial_*_ubuntu*.deb` to a GitHub Release, and the release workflow copies them to apt.mltz.tech.
 
-## 🔗 Related Projects
+`gen_deb.sh` fills the package `Depends` line from the binary on the build machine. Qt already depends on X11, zlib and GLib, so those are not listed again.
 
-- [tinyNetwork](https://github.com/carloscn/tinyNetwork) - Network debugging tool by the same author
+## Roadmap
 
-## 📄 License
+- Data plotting (the Plotting tab is a placeholder for now)
+- Better custom baud rate support
+- macOS polish
+- Scripted sending
 
-This project is licensed under the Mozilla Public License 2.0 (MPL-2.0). See the [LICENSE](LICENSE) file for details.
+## Contributing
 
-## 👤 Author
+Bug reports and pull requests are welcome: https://github.com/carloscn/tinyserial/issues
 
-**Carlos Wei**
+Related: [tinyNetwork](https://github.com/carloscn/tinyNetwork), a network debugging tool by the same author.
 
-- Email: carlos.wei.hk@gmail.com
-- GitHub: [@carloscn](https://github.com/carloscn)
-- Homepage: http://www.mlts.tech/
+## License
 
-## 🙏 Acknowledgments
+Mozilla Public License 2.0. See [LICENSE](LICENSE).
 
-- Built with [Qt Framework](https://www.qt.io/)
-- Part of the MULTIBEANS project
-
-## 📞 Support
-
-If you encounter any issues or have questions:
-
-- 📧 Email: carlos.wei.hk@gmail.com
-- 🌐 [TinySerial website](https://tinyserial.mltz.tech/)
-- 🐛 [Report Issues](https://github.com/carloscn/tinyserial/issues)
-- 📖 [Documentation](tinyserial-deb-prj/README.md)
-
----
-
-<div align="center">
-
-**Made with ❤️ by Carlos Wei**
-
-⭐ Star this repo if you find it useful!
-
-</div>
+Carlos Wei · carlos.wei.hk@gmail.com · https://mltz.tech

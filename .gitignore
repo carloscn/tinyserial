@@ -8,3 +8,4 @@ dist
 tinyserial.deb
 .docker-store
 cmake-build-*/
+website/_site/
