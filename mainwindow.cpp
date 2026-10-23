@@ -807,7 +807,10 @@ void MainWindow::updateLayoutMetrics()
             desiredWidth = qMax(desiredWidth, panel->layout()->minimumSize().width());
     }
     const int availableSidebarWidth = qMax(320, width() * 45 / 100);
-    const int sidebarWidth = qBound(320, desiredWidth, availableSidebarWidth);
+    // The cards' real minimum wins over the 45% cap: below it the layout
+    // forces the content wider than the scroll view and clips the cards.
+    const int contentMinimum = ui->verticalLayout_6->minimumSize().width();
+    const int sidebarWidth = qMax(qBound(320, desiredWidth, availableSidebarWidth), contentMinimum);
     const int scrollBarExtent = style()->pixelMetric(QStyle::PM_ScrollBarExtent);
     sidebarContent->setMinimumWidth(sidebarWidth);
     sidebarContent->setMaximumWidth(sidebarWidth);

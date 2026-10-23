@@ -15,16 +15,19 @@ void setError(TextEncodeError *error, TextEncodeError value)
 }
 
 #if QT_VERSION >= QT_VERSION_CHECK(6, 0, 0)
+// Qt before 6.5 has no QString constructor for these, only const char *.
 QStringDecoder decoderFor(const QString &encoding)
 {
     return encoding == QLatin1String("System")
-        ? QStringDecoder(QStringConverter::System) : QStringDecoder(encoding);
+        ? QStringDecoder(QStringConverter::System)
+        : QStringDecoder(encoding.toLatin1().constData());
 }
 
 QStringEncoder encoderFor(const QString &encoding)
 {
     return encoding == QLatin1String("System")
-        ? QStringEncoder(QStringConverter::System) : QStringEncoder(encoding);
+        ? QStringEncoder(QStringConverter::System)
+        : QStringEncoder(encoding.toLatin1().constData());
 }
 #endif
 

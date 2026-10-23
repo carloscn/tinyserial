@@ -112,6 +112,8 @@ if(BUILD_TESTING)
     target_include_directories(tst_timeline PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(tst_timeline PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME timeline COMMAND tst_timeline)
+    # The model uses QFont, so the test needs a GUI platform; CI has no display.
+    set_tests_properties(timeline PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
     add_executable(tst_displaybuffer tests/tst_displaybuffer.cpp displaybuffer.cpp displaybuffer.h)
     target_include_directories(tst_displaybuffer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
