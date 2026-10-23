@@ -20,6 +20,8 @@ set(TINYSERIAL_SOURCES
     aboutdialog.h
     serialcodec.cpp
     serialcodec.h
+    timeline.cpp
+    timeline.h
     uilanguage.cpp
     uilanguage.h
     serialport.ui
@@ -50,4 +52,9 @@ if(BUILD_TESTING)
     target_include_directories(tst_uilanguage PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(tst_uilanguage PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME uilanguage COMMAND tst_uilanguage)
+
+    add_executable(tst_timeline tests/tst_timeline.cpp timeline.cpp timeline.h)
+    target_include_directories(tst_timeline PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(tst_timeline PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Gui Qt${QT_VERSION_MAJOR}::Test)
+    add_test(NAME timeline COMMAND tst_timeline)
 endif()

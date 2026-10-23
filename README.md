@@ -13,6 +13,7 @@ Website: https://tinyserial.mltz.tech
 - Repeat sending at a fixed interval in milliseconds
 - Optional timestamps and echo of sent data
 - Save the session to a log file, or log to a file continuously while it runs
+- Timeline tab: every received line, send and connection event with millisecond times, the delay before the device answered a send, filters and search, and CSV or JSON Lines export
 - Standard or custom baud rates, data bits, parity, stop bits and flow control
 - Light and dark themes; English, Chinese and Spanish interface
 

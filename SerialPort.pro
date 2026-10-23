@@ -27,6 +27,7 @@ SOURCES += main.cpp\
     aboutdialog.cpp \
     mainwindow.cpp \
     serialcodec.cpp \
+    timeline.cpp \
     uilanguage.cpp
 
 HEADERS  += \
@@ -34,6 +35,7 @@ HEADERS  += \
     aboutdialog.h \
     mainwindow.h \
     serialcodec.h \
+    timeline.h \
     uilanguage.h
 
 FORMS    += serialport.ui \

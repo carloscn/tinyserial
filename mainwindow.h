@@ -28,6 +28,7 @@
 #include "global.h"
 #include <QValidator>
 #include "aboutdialog.h"
+#include "timeline.h"
 #include "uilanguage.h"
 
 namespace Ui {
@@ -39,6 +40,11 @@ class QComboBox;
 class QFile;
 class QGridLayout;
 class QEvent;
+class QCheckBox;
+class QLineEdit;
+class QPushButton;
+class QTableView;
+class QWidget;
 
 enum class UiThemeMode {
     System,
@@ -118,11 +124,21 @@ private slots:
     void flushPendingDisplay();
     void onSerialBytesWritten(qint64 bytes);
     void onSerialError(QSerialPort::SerialPortError error);
+    void flushTimelineLine();
+    void flushTimelineEvents();
+    void exportTimelineCsv();
+    void exportTimelineJsonLines();
+    void openTimelineFile();
+    void clearTimeline();
+    void updateTimelineSelection();
 
 private:
     static constexpr int DEFAULT_REPEAT_INTERVAL_MS = 1000;
     static constexpr int DISPLAY_FLUSH_INTERVAL_MS = 33;
     static constexpr int MAX_DISPLAY_CHARACTERS = 1024 * 1024;
+    // Received bytes with no newline become one event after this much silence.
+    static constexpr int TIMELINE_IDLE_GAP_MS = 20;
+    static constexpr int TIMELINE_FLUSH_INTERVAL_MS = 100;
     Ui::SerialPort *ui;
     AboutDialog *aboutDialog;
     QTimer *repeatSendTimer;
@@ -141,6 +157,26 @@ private:
     QString currentConnectCom;
     QValidator *validator_combox_baudrate;
     QString pendingDisplay;
+
+    TimelineModel *timelineModel;
+    TimelineFilterModel *timelineFilter;
+    TimelineLineAssembler timelineAssembler;
+    QVector<TimelineEvent> pendingTimelineEvents;
+    QTimer *timelineIdleTimer;
+    QTimer *timelineFlushTimer;
+    QWidget *timelineTab;
+    QTableView *timelineView;
+    QCheckBox *timelineShowRx;
+    QCheckBox *timelineShowTx;
+    QCheckBox *timelineShowSystem;
+    QLineEdit *timelineSearch;
+    QComboBox *timelineContentMode;
+    QCheckBox *timelineAutoScroll;
+    QLabel *timelineSummary;
+    QPushButton *timelineOpenButton;
+    QPushButton *timelineCsvButton;
+    QPushButton *timelineJsonButton;
+    QPushButton *timelineClearButton;
 
     bool isShowSend;
     bool isShowTime;
@@ -177,9 +213,19 @@ private:
     void setFlowControl(int index);
     QString formatReceiveData(const QByteArray &data, bool isAscii);
     QString formatSendData(const QByteArray &data, bool isAscii);
-    void sendData(const QString &input, bool showInDisplay = true);
+    void sendData(const QString &input, TimelineSource source, bool showInDisplay = true);
     void queueDisplayText(const QString &text);
     void appendDisplayText(const QString &text);
+    void configureTimelineTab();
+    void moveSendAreaBelowTabs();
+    void recordTimelineEvent(const TimelineEvent &event);
+    void recordTimelineEvents(const QVector<TimelineEvent> &events);
+    void recordSystemEvent(const QString &message);
+    QString connectionSummary() const;
+    QString askTimelineFileName(const char *titleKey, const char *filterKey, const QString &suffix, bool save);
+    void updateTimelineSummary();
+    int selectedTimelineRow() const;
+    void resizeTimelineColumns();
 
     quint64 recCount;
     quint64 sendCount;
