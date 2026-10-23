@@ -4,29 +4,31 @@
 
 #include <QRegularExpression>
 
-bool SerialCodec::decodeHex(const QString &input, QByteArray *output, QString *errorMessage)
+bool SerialCodec::decodeHex(const QString &input, QByteArray *output, HexError *error)
 {
     const QString normalized = QString(input).remove(QRegularExpression(QStringLiteral("\\s+")));
 
     if (normalized.isEmpty()) {
-        if (errorMessage)
-            *errorMessage = QStringLiteral("HEX data is empty.");
+        if (error)
+            *error = HexError::Empty;
         return false;
     }
 
     if (normalized.size() % 2 != 0) {
-        if (errorMessage)
-            *errorMessage = QStringLiteral("HEX data must contain complete bytes (an even number of digits).");
+        if (error)
+            *error = HexError::IncompleteByte;
         return false;
     }
 
     static const QRegularExpression validHex(QStringLiteral("^[0-9A-Fa-f]+$"));
     if (!validHex.match(normalized).hasMatch()) {
-        if (errorMessage)
-            *errorMessage = QStringLiteral("HEX data may only contain digits A-F and whitespace.");
+        if (error)
+            *error = HexError::InvalidCharacter;
         return false;
     }
 
+    if (error)
+        *error = HexError::None;
     if (output)
         *output = QByteArray::fromHex(normalized.toLatin1());
     return true;

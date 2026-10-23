@@ -41,6 +41,28 @@
 #include <QTextStream>
 #include <QTimer>
 
+namespace {
+
+// Prefer a well-hinted monospace face; the system FixedFont mapping can be a
+// thin or bitmap font on some Linux desktops and renders poorly.
+QFont terminalMonospaceFont()
+{
+    const QStringList preferred = {
+        QStringLiteral("JetBrains Mono"), QStringLiteral("Cascadia Mono"),
+        QStringLiteral("Cascadia Code"), QStringLiteral("Consolas"),
+        QStringLiteral("Menlo"), QStringLiteral("Noto Sans Mono"),
+        QStringLiteral("DejaVu Sans Mono"), QStringLiteral("Liberation Mono")
+    };
+    const QStringList available = QFontDatabase().families();
+    for (const QString &family : preferred) {
+        if (available.contains(family))
+            return QFont(family);
+    }
+    return QFontDatabase::systemFont(QFontDatabase::FixedFont);
+}
+
+} // namespace
+
 MainWindow::MainWindow(QWidget *parent) :
     QMainWindow(parent),
     ui(new Ui::SerialPort),
@@ -74,6 +96,12 @@ MainWindow::MainWindow(QWidget *parent) :
         themeMode = UiThemeMode::Light;
     darkMode = themeMode == UiThemeMode::Dark
         || (themeMode == UiThemeMode::System && systemUsesDarkTheme());
+    // Set the terminal font before the stylesheet polishes the text views,
+    // otherwise their viewports keep the default font for the placeholder.
+    QFont terminalFont = terminalMonospaceFont();
+    terminalFont.setPointSizeF(10.5);
+    ui->textBrowser_rec->setFont(terminalFont);
+    ui->textEdit_send->setFont(terminalFont);
     initQssStyleSheet();
     configureLayout();
     configureLanguageSelector();
@@ -83,10 +111,6 @@ MainWindow::MainWindow(QWidget *parent) :
             this, [this](Qt::ColorScheme) { refreshThemeFromPreference(); });
 #endif
 
-    QFont terminalFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-    terminalFont.setPointSizeF(10.0);
-    ui->textBrowser_rec->setFont(terminalFont);
-    ui->textEdit_send->setFont(terminalFont);
     ui->statusBar->addPermanentWidget(connectionIndicator);
 
     // Send/Receive ASCII Format initialization
@@ -817,6 +841,14 @@ void MainWindow::applyLanguage(UiLanguage language)
 
 void MainWindow::initQssStyleSheet()
 {
+    // The default placeholder color is a very faint grey; make it legible.
+    // Set here so it follows theme changes, not just the startup theme.
+    QPalette placeholderPalette = ui->textBrowser_rec->palette();
+    placeholderPalette.setColor(QPalette::PlaceholderText,
+                                darkMode ? QColor(0x8f, 0xa1, 0xaa) : QColor(0x61, 0x75, 0x7f));
+    ui->textBrowser_rec->setPalette(placeholderPalette);
+    ui->textEdit_send->setPalette(placeholderPalette);
+
     setStyleSheet(QStringLiteral(R"QSS(
         QMainWindow, QDialog {
             background: #f6f8fa;
@@ -837,7 +869,7 @@ void MainWindow::initQssStyleSheet()
         QMenu::item { padding: 7px 22px; border-radius: 4px; }
         QStatusBar {
             background: #ffffff;
-            color: #61757f;
+            color: #425660;
             border-top: 1px solid #dbe4e8;
             padding: 5px 12px;
         }
@@ -853,7 +885,11 @@ void MainWindow::initQssStyleSheet()
             margin: 0;
             padding: 0;
         }
-        QLabel { color: #61757f; }
+        /* QLabel inherits QFrame, so the QFrame rule must come first or it wins. */
+        QFrame { color: #dbe4e8; }
+        QLabel { color: #425660; }
+        QLabel#label, QLabel#label_2, QLabel#DataBits, QLabel#label_3, QLabel#label_4, QLabel#label_5 { color: #000000; }
+        QMessageBox QLabel { color: #000000; }
         QLabel#sectionTitle {
             color: #172b35;
             font-size: 14px;
@@ -861,7 +897,6 @@ void MainWindow::initQssStyleSheet()
             padding: 0;
             margin: 0 0 2px 0;
         }
-        QFrame { color: #dbe4e8; }
         QComboBox, QSpinBox {
             background: #ffffff;
             border: 1px solid #dbe4e8;
@@ -900,7 +935,7 @@ void MainWindow::initQssStyleSheet()
             min-height: 28px;
             padding: 0 24px 0 12px;
             margin: 2px 0;
-            color: #61757f;
+            color: #425660;
         }
         QComboBox#themeSelector:hover, QComboBox#themeSelector:focus {
             background: #ffffff;
@@ -917,6 +952,14 @@ void MainWindow::initQssStyleSheet()
         QPushButton:hover { background: #eef3f5; border-color: #dc430b; }
         QPushButton:pressed { background: #e5ebee; }
         QPushButton:disabled { background: #f6f8fa; color: #9aadb5; border-color: #dbe4e8; }
+        QPushButton#pushButton_open:disabled, QPushButton#pushButton_send:disabled {
+            background: #f6f8fa; color: #9aadb5; border-color: #dbe4e8;
+        }
+        QPushButton#pushButton_close:disabled { background: transparent; color: #c3cfd4; border-color: #e6ecef; }
+        QPushButton#pushButton_open:disabled:hover, QPushButton#pushButton_send:disabled:hover {
+            background: #f6f8fa; border-color: #dbe4e8;
+        }
+        QComboBox:disabled, QSpinBox:disabled { background: #f6f8fa; color: #9aadb5; border-color: #dbe4e8; }
         QPushButton#pushButton_open, QPushButton#pushButton_send {
             background: #dc430b;
             border-color: #dc430b;
@@ -926,8 +969,8 @@ void MainWindow::initQssStyleSheet()
         QPushButton#pushButton_open:hover, QPushButton#pushButton_send:hover { background: #bd3607; border-color: #bd3607; }
         QPushButton#pushButton_close { background: transparent; border-color: #e6b7bd; color: #bf3348; }
         QPushButton#pushButton_close:hover { background: #fff0f1; border-color: #bf3348; }
-        QPushButton#pushButton_clear { background: transparent; color: #61757f; }
-        QCheckBox, QRadioButton { spacing: 7px; color: #61757f; padding: 3px 0; }
+        QPushButton#pushButton_clear { background: transparent; color: #425660; }
+        QCheckBox, QRadioButton { spacing: 7px; color: #425660; padding: 3px 0; }
         QCheckBox::indicator, QRadioButton::indicator {
             width: 15px; height: 15px;
             border: 1px solid #b8c7cd;
@@ -962,7 +1005,7 @@ void MainWindow::initQssStyleSheet()
         QTabBar { qproperty-drawBase: 0; }
         QTabBar::tab {
             background: transparent;
-            color: #61757f;
+            color: #425660;
             border: 0;
             border-bottom: 2px solid transparent;
             padding: 12px 18px;
@@ -974,12 +1017,12 @@ void MainWindow::initQssStyleSheet()
         QTabBar::tab:hover:!selected { color: #dc430b; }
         QLabel#labelRBytes { color: #d93900; font-weight: 700; }
         QLabel#labelSBytes { color: #147d5b; font-weight: 700; }
-        QLabel#label_8, QLabel#label_9 { color: #61757f; }
+        QLabel#label_8, QLabel#label_9 { color: #425660; }
         QLabel#connectionIndicator {
             background: transparent;
             border: 0;
             border-radius: 6px;
-            color: #61757f;
+            color: #425660;
             font-weight: 600;
             padding: 3px 4px;
         }
@@ -1008,12 +1051,14 @@ void MainWindow::initQssStyleSheet()
         QMenuBar::item:selected, QMenu::item:selected { background: #3a241c; color: #ff713d; }
         QMenu { background: #1b252b; color: #e7edf0; border-color: #34444e; }
         QMenu::item:disabled { color: #6f808a; }
-        QStatusBar { background: #182127; color: #9babb4; border-top-color: #30404a; }
+        QStatusBar { background: #182127; color: #c9d5db; border-top-color: #30404a; }
         QScrollArea#sidebarScroll, QWidget#sidebarContent, QWidget#menuControls { background: transparent; }
         QGroupBox { background: #192228; border-color: #30404a; }
-        QLabel { color: #9babb4; }
-        QLabel#sectionTitle { color: #eef3f5; }
         QFrame { color: #30404a; }
+        QLabel { color: #c9d5db; }
+        QLabel#label, QLabel#label_2, QLabel#DataBits, QLabel#label_3, QLabel#label_4, QLabel#label_5 { color: #e7edf0; }
+        QMessageBox QLabel { color: #e7edf0; }
+        QLabel#sectionTitle { color: #eef3f5; }
         QComboBox, QSpinBox, QFileDialog QLineEdit {
             background: #202b32;
             color: #e7edf0;
@@ -1049,6 +1094,14 @@ void MainWindow::initQssStyleSheet()
         QPushButton:hover { background: #29363e; border-color: #f05a24; }
         QPushButton:pressed { background: #303e47; }
         QPushButton:disabled { background: #172027; color: #657680; border-color: #293841; }
+        QPushButton#pushButton_open:disabled, QPushButton#pushButton_send:disabled {
+            background: #172027; color: #657680; border-color: #293841;
+        }
+        QPushButton#pushButton_close:disabled { background: transparent; color: #4a5c66; border-color: #33424c; }
+        QPushButton#pushButton_open:disabled:hover, QPushButton#pushButton_send:disabled:hover {
+            background: #172027; border-color: #293841;
+        }
+        QComboBox:disabled, QSpinBox:disabled { background: #1b252b; color: #5d6e78; border-color: #2b3840; }
         QPushButton#pushButton_open, QPushButton#pushButton_send {
             background: #e9521d;
             border-color: #e9521d;
@@ -1060,8 +1113,8 @@ void MainWindow::initQssStyleSheet()
         }
         QPushButton#pushButton_close { color: #ff8290; border-color: #75434b; }
         QPushButton#pushButton_close:hover { background: #392126; border-color: #ff8290; }
-        QPushButton#pushButton_clear { color: #9babb4; }
-        QCheckBox, QRadioButton { color: #aebcc3; }
+        QPushButton#pushButton_clear { color: #c9d5db; }
+        QCheckBox, QRadioButton { color: #c9d5db; }
         QCheckBox::indicator, QRadioButton::indicator {
             background: #202b32;
             border-color: #60727c;
@@ -1077,12 +1130,12 @@ void MainWindow::initQssStyleSheet()
             selection-background-color: #704028;
         }
         QPlainTextEdit#textBrowser_rec:focus, QTextEdit#textEdit_send:focus { border-color: #f05a24; }
-        QTabBar::tab { color: #8fa1aa; }
+        QTabBar::tab { color: #b8c6cd; }
         QTabBar::tab:selected { color: #eef3f5; border-bottom-color: #f05a24; }
         QTabBar::tab:hover:!selected { color: #ff713d; }
         QLabel#labelRBytes { color: #ff713d; }
         QLabel#labelSBytes, QLabel#connectionIndicator[connected="true"] { color: #4fc49a; }
-        QLabel#label_8, QLabel#label_9, QLabel#connectionIndicator { color: #9babb4; }
+        QLabel#label_8, QLabel#label_9, QLabel#connectionIndicator { color: #c9d5db; }
         QFrame#line { background: #30404a; }
         QFrame#line_2 { background: #30404a; }
         QFileDialog QToolButton { color: #dce5e9; background: transparent; }
@@ -1423,15 +1476,12 @@ void MainWindow::sendData(const QString &input, bool showInDisplay)
     if (sendAsciiFormat) {
         dataToSend = input.toLatin1();
     } else {
-        QString error;
-        if (!SerialCodec::decodeHex(input, &dataToSend, &error)) {
-            if (error == QStringLiteral("HEX data is empty."))
-                error = text("hex_empty");
-            else if (error == QStringLiteral("HEX data must contain complete bytes (an even number of digits)."))
-                error = text("hex_incomplete");
-            else if (error == QStringLiteral("HEX data may only contain digits A-F and whitespace."))
-                error = text("hex_characters");
-            showWarning(text("invalid_hex"), error);
+        SerialCodec::HexError hexError = SerialCodec::HexError::None;
+        if (!SerialCodec::decodeHex(input, &dataToSend, &hexError)) {
+            const char *errorKey = hexError == SerialCodec::HexError::Empty ? "hex_empty"
+                : hexError == SerialCodec::HexError::IncompleteByte ? "hex_incomplete"
+                : "hex_characters";
+            showWarning(text("invalid_hex"), text(errorKey));
             return;
         }
     }
@@ -1442,6 +1492,10 @@ void MainWindow::sendData(const QString &input, bool showInDisplay)
             showWarning(text("warning"), text("write_failed"));
             return;
         }
+
+        // Sent data is echoed to the terminal and log only when "Show sent data" is on.
+        if (!isShowSend)
+            return;
 
         const QString formattedData = formatSendData(dataToSend, sendAsciiFormat);
         appendRealtimeLog(formattedData);

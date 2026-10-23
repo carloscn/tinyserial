@@ -10,6 +10,7 @@ class SerialCodecTest : public QObject
 
 private slots:
     void decodesWhitespaceSeparatedBytes();
+    void acceptsValidInput();
     void rejectsMalformedHex_data();
     void rejectsMalformedHex();
     void encodesUppercaseSpacedBytes();
@@ -18,28 +19,38 @@ private slots:
 void SerialCodecTest::decodesWhitespaceSeparatedBytes()
 {
     QByteArray decoded;
-    QString error;
+    SerialCodec::HexError error = SerialCodec::HexError::Empty;
     QVERIFY(SerialCodec::decodeHex(QStringLiteral("01 ab\nFF"), &decoded, &error));
     QCOMPARE(decoded, QByteArray::fromHex("01abff"));
-    QVERIFY(error.isEmpty());
+    QCOMPARE(error, SerialCodec::HexError::None);
+}
+
+void SerialCodecTest::acceptsValidInput()
+{
+    QByteArray decoded;
+    SerialCodec::HexError error = SerialCodec::HexError::Empty;
+    QVERIFY(SerialCodec::decodeHex(QStringLiteral("00 ff"), &decoded, &error));
+    QCOMPARE(error, SerialCodec::HexError::None);
 }
 
 void SerialCodecTest::rejectsMalformedHex_data()
 {
     QTest::addColumn<QString>("input");
-    QTest::newRow("empty") << QString();
-    QTest::newRow("spaces") << QStringLiteral(" \t\n");
-    QTest::newRow("odd digits") << QStringLiteral("ABC");
-    QTest::newRow("invalid character") << QStringLiteral("01 GG");
+    QTest::addColumn<int>("expectedError");
+    QTest::newRow("empty") << QString() << int(SerialCodec::HexError::Empty);
+    QTest::newRow("spaces") << QStringLiteral(" \t\n") << int(SerialCodec::HexError::Empty);
+    QTest::newRow("odd digits") << QStringLiteral("ABC") << int(SerialCodec::HexError::IncompleteByte);
+    QTest::newRow("invalid character") << QStringLiteral("01 GG") << int(SerialCodec::HexError::InvalidCharacter);
 }
 
 void SerialCodecTest::rejectsMalformedHex()
 {
     QFETCH(QString, input);
+    QFETCH(int, expectedError);
     QByteArray decoded("unchanged");
-    QString error;
+    SerialCodec::HexError error = SerialCodec::HexError::None;
     QVERIFY(!SerialCodec::decodeHex(input, &decoded, &error));
-    QVERIFY(!error.isEmpty());
+    QCOMPARE(int(error), expectedError);
     QCOMPARE(decoded, QByteArray("unchanged"));
 }
 
