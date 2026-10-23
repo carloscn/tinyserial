@@ -8,14 +8,35 @@
 
 #include <QDateTime>
 #include <QDebug>
+#include <QDir>
+#include <QEvent>
+#include <QApplication>
+#include <QCheckBox>
+#include <QComboBox>
+#include <QFontDatabase>
+#include <QFontMetrics>
 #include <QFile>
 #include <QFileDialog>
+#include <QFileInfo>
+#include <QFormLayout>
+#include <QGridLayout>
+#include <QLabel>
+#include <QLocale>
+#include <QSettings>
+#include <QSizePolicy>
+#include <QStyle>
+#include <QStyleHints>
+#include <QStandardPaths>
 #include <QMessageBox>
+#include <QPalette>
 #include <QPlainTextEdit>
+#include <QPushButton>
 #include <QRegularExpression>
 #include <QRegularExpressionValidator>
 #include <QScrollBar>
+#include <QScrollArea>
 #include <QSerialPortInfo>
+#include <QSignalBlocker>
 #include <QTextCursor>
 #include <QTextStream>
 #include <QTimer>
@@ -27,10 +48,46 @@ MainWindow::MainWindow(QWidget *parent) :
     repeatSendTimer(new QTimer(this)),
     portWatchTimer(new QTimer(this)),
     displayFlushTimer(new QTimer(this)),
-    serial(new QSerialPort(this))
+    serial(new QSerialPort(this)),
+    realtimeLogFile(new QFile(this)),
+    connectionIndicator(new QLabel(this)),
+    connectionTitle(new QLabel(this)),
+    receiveTitle(new QLabel(this)),
+    transmitTitle(new QLabel(this)),
+    languageSelector(new QComboBox(this)),
+    themeSelector(new QComboBox(this)),
+    settingsGrid(nullptr),
+    currentLanguage(UiLanguage::English),
+    themeMode(UiThemeMode::System),
+    darkMode(false)
 {
     ui->setupUi(this);
     setWindowTitle(QStringLiteral("tinySerial v") + QLatin1String(APP_VERSION));
+    setMinimumSize(1000, 680);
+    resize(1240, 800);
+    const QSettings settings(QStringLiteral("MULTIBEANS"), QStringLiteral("TinySerial"));
+    const QString savedTheme = settings.value(QStringLiteral("ui/themeMode"),
+                                               QStringLiteral("system")).toString();
+    if (savedTheme == QLatin1String("dark"))
+        themeMode = UiThemeMode::Dark;
+    else if (savedTheme == QLatin1String("light"))
+        themeMode = UiThemeMode::Light;
+    darkMode = themeMode == UiThemeMode::Dark
+        || (themeMode == UiThemeMode::System && systemUsesDarkTheme());
+    initQssStyleSheet();
+    configureLayout();
+    configureLanguageSelector();
+    qApp->installEventFilter(this);
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    connect(qApp->styleHints(), &QStyleHints::colorSchemeChanged,
+            this, [this](Qt::ColorScheme) { refreshThemeFromPreference(); });
+#endif
+
+    QFont terminalFont = QFontDatabase::systemFont(QFontDatabase::FixedFont);
+    terminalFont.setPointSizeF(10.0);
+    ui->textBrowser_rec->setFont(terminalFont);
+    ui->textEdit_send->setFont(terminalFont);
+    ui->statusBar->addPermanentWidget(connectionIndicator);
 
     // Send/Receive ASCII Format initialization
     sendAsciiFormat = true;
@@ -40,6 +97,9 @@ MainWindow::MainWindow(QWidget *parent) :
     recCount = 0;
     sendCount = 0;
     validator_combox_baudrate = nullptr;
+
+    const QString defaultCode = QLocale::system().name();
+    applyLanguage(uiLanguageFromCode(settings.value(QStringLiteral("ui/language"), defaultCode).toString()));
 
     // UI initialization
     ui->pushButton_close->setEnabled(false);
@@ -64,10 +124,6 @@ MainWindow::MainWindow(QWidget *parent) :
         repeatSendTimer->stop();
     }
 
-    // Theme initialization
-#ifdef ENABLE_THEME
-    initQssStyleSheet();
-#endif
     connect(repeatSendTimer, &QTimer::timeout, this, &MainWindow::SoftAutoWriteUart);
     connect(serial, &QSerialPort::readyRead, this, &MainWindow::serialRcvData);
     connect(serial, &QSerialPort::bytesWritten, this, &MainWindow::onSerialBytesWritten);
@@ -87,6 +143,8 @@ MainWindow::MainWindow(QWidget *parent) :
 
 MainWindow::~MainWindow()
 {
+    qApp->removeEventFilter(this);
+    stopRealtimeLog();
     portWatchTimer->stop();
     displayFlushTimer->stop();
     on_pushButton_close_clicked();
@@ -108,14 +166,16 @@ void MainWindow::serialRcvData()
     recCount += static_cast<quint64>(recvArray.size());
     ui->labelRBytes->setText(QString::number(recCount));
 
-    // Pause deliberately stops rendering, not draining the device buffer.
+    const QString formattedStr = formatReceiveData(recvArray, recAsciiFormat);
+    appendRealtimeLog(formattedStr);
+
+    // Pause deliberately stops rendering, not draining the device buffer or logging.
     // This keeps memory bounded and lets a resumed session receive new data
     // immediately instead of waiting for another readyRead notification.
     if (pauseComOutput) {
         return;
     }
 
-    QString formattedStr = formatReceiveData(recvArray, recAsciiFormat);
     queueDisplayText(formattedStr);
 }
 
@@ -124,7 +184,7 @@ void MainWindow::SoftAutoWriteUart()
     QString input = ui->textEdit_send->toPlainText();
 
     if (input.isEmpty()) {
-        QMessageBox::warning(this, "Warning", "The text is blank!\n Please input the data then send...");
+        showWarning(text("warning"), text("empty_send"));
         ui->checkBox_repeat->setChecked(false);
         repeatSendTimer->stop();
         return;
@@ -144,7 +204,7 @@ void MainWindow::on_pushButton_open_clicked()
         bool valid = false;
         const qint32 baudRate = ui->comboBox_baudrate->currentText().toInt(&valid);
         if (!valid || baudRate <= 0) {
-            QMessageBox::warning(this, tr("Invalid baud rate"), tr("Enter a custom baud rate between 1 and 9,999,999."));
+            showWarning(text("invalid_baud_title"), text("invalid_baud"));
             return;
         }
     }
@@ -152,15 +212,13 @@ void MainWindow::on_pushButton_open_clicked()
     
     QString portInfo = ui->comboBox_serialPort->currentText();
     if (portInfo.isEmpty() || ui->comboBox_serialPort->currentIndex() == -1) {
-        QMessageBox::warning(this, "Warning", 
-            "Please click firstly the scan button to check your available devices.\n"
-            "Then connect after selecting one device in the list.");
+        showWarning(text("warning"), text("select_port"));
         return;
     }
     
     currentConnectCom = ui->comboBox_serialPort->currentData().toString();
     if (currentConnectCom.isEmpty()) {
-        QMessageBox::warning(this, "Warning", "Invalid port information!");
+        showWarning(text("warning"), text("invalid_port"));
         return;
     }
     qDebug() << currentConnectCom;
@@ -168,16 +226,11 @@ void MainWindow::on_pushButton_open_clicked()
     serial->setPortName(currentConnectCom);
     
     if (!serial->open(QIODevice::ReadWrite)) {
-        QString errorMsg = serial->errorString();
-        QMessageBox::warning(this, "Warning", 
-            QString("Open serial port failed!\n%1\n\nPlease check:\n"
-                    "1. Is the serial port occupied by other software?\n"
-                    "2. Is the serial port connection normal?\n"
-                    "3. Do you have permission to access the port?")
-            .arg(errorMsg));
-        qDebug() << tr("SYSTEM: The serial port failed to open, error:") << errorMsg;
+        const QString errorMsg = serialErrorText(serial->error());
+        showWarning(text("warning"), text("open_failed").arg(portInfo, errorMsg));
+        qDebug() << "SYSTEM: The serial port failed to open, error:" << serial->errorString();
         ui->comboBox_serialPort->setEnabled(true);
-        ui->statusBar->showMessage("Open: " + portInfo + " failed!");
+        ui->statusBar->showMessage(text("open_failed").arg(portInfo, errorMsg));
     } else {
         qDebug() << tr("SYSTEM: The system has been connected with ") + portInfo;
         ui->pushButton_close->setEnabled(true);
@@ -185,9 +238,9 @@ void MainWindow::on_pushButton_open_clicked()
         ui->comboBox_serialPort->setEnabled(false);
         ui->pushButton_scan->setEnabled(false);
         ui->pushButton_send->setEnabled(true);
-        QMessageBox::information(this, "Information", 
-            "UART: " + portInfo + " has been connected!\nWait device signals.");
-        ui->statusBar->showMessage("Open: " + portInfo + " OK!");
+        setConnectionState(true);
+        showInformation(text("information"), text("open_ok").arg(portInfo));
+        ui->statusBar->showMessage(text("open_ok").arg(portInfo));
     }
     qDebug() << "The serial has been opened!!";
 }
@@ -207,7 +260,7 @@ void MainWindow::RefreshTheUSBList()
     if (openPortRemoved) {
         const QString removedPort = currentConnectCom;
         on_pushButton_close_clicked();
-        ui->statusBar->showMessage("Serial port " + removedPort + " was disconnected");
+        ui->statusBar->showMessage(text("port_disconnected").arg(removedPort));
     }
 
     QStringList currentLabels;
@@ -240,9 +293,9 @@ void MainWindow::RefreshTheUSBList()
     if (openPortRemoved || serial->isOpen())
         return;
     if (labels.isEmpty())
-        ui->statusBar->showMessage("No serial ports available", 2000);
+        ui->statusBar->showMessage(text("no_ports"), 2000);
     else
-        ui->statusBar->showMessage(QString("Found %1 serial port(s)").arg(labels.size()), 2000);
+        ui->statusBar->showMessage(text("ports_found").arg(labels.size()), 2000);
 }
 
 void MainWindow::on_pushButton_scan_clicked()
@@ -258,7 +311,8 @@ void MainWindow::on_pushButton_close_clicked()
     ui->pushButton_send->setEnabled(false);
     ui->pushButton_scan->setEnabled(true);
     ui->comboBox_serialPort->setEnabled(true);
-    ui->statusBar->showMessage("No Port is Connected!");
+    setConnectionState(false);
+    ui->statusBar->showMessage(text("no_connection"));
     ui->checkBox_repeat->setChecked(false);
     repeatSend = false;
     repeatSendTimer->stop();
@@ -341,7 +395,7 @@ void MainWindow::on_pushButton_send_clicked()
     
     if (input.isEmpty()) {
         if (!ui->checkBox_repeat->isChecked()) {
-            QMessageBox::warning(this, "Warning", "The send text is empty!\n Please input the data...");
+            showWarning(text("warning"), text("empty_send"));
         }
         return;
     }
@@ -362,7 +416,7 @@ void MainWindow::on_spinBox_repeat_valueChanged(int arg1)
 void MainWindow::on_checkBox_repeat_clicked(bool checked)
 {
     if (checked && !serial->isOpen()) {
-        QMessageBox::warning(this, tr("Serial port closed"), tr("Open a serial port before enabling repeat send."));
+        showWarning(text("serial_closed"), text("open_before_repeat"));
         ui->checkBox_repeat->setChecked(false);
         repeatSend = false;
         return;
@@ -384,27 +438,677 @@ void MainWindow::on_checkBox_repeat_clicked(bool checked)
 // Note: on_checkBox_enableDraw_clicked function removed
 // The corresponding UI control (checkBox_enableDraw) no longer exists in the UI file
 
+void MainWindow::configureLayout()
+{
+    ui->horizontalLayout_4->removeItem(ui->verticalLayout_6);
+    ui->verticalLayout_6->setParent(nullptr);
+    auto *sidebarContent = new QWidget(this);
+    sidebarContent->setObjectName(QStringLiteral("sidebarContent"));
+    sidebarContent->setLayout(ui->verticalLayout_6);
+    sidebarContent->setMinimumWidth(344);
+    sidebarContent->setMaximumWidth(344);
+
+    auto *sidebarScroll = new QScrollArea(this);
+    sidebarScroll->setObjectName(QStringLiteral("sidebarScroll"));
+    sidebarScroll->setFrameShape(QFrame::NoFrame);
+    sidebarScroll->setWidgetResizable(true);
+    sidebarScroll->setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    sidebarScroll->setWidget(sidebarContent);
+    sidebarScroll->setMinimumWidth(344);
+    sidebarScroll->setMaximumWidth(354);
+    ui->horizontalLayout_4->insertWidget(0, sidebarScroll);
+
+    ui->horizontalLayout_4->setStretch(0, 0);
+    ui->horizontalLayout_4->setStretch(1, 1);
+    ui->horizontalLayout_4->setContentsMargins(20, 14, 20, 12);
+    ui->horizontalLayout_4->setSpacing(18);
+    ui->verticalLayout_6->setSpacing(10);
+    ui->verticalLayout_6->setContentsMargins(0, 0, 0, 0);
+    ui->verticalLayout_6->setAlignment(Qt::AlignTop);
+
+    const QList<QWidget *> panels = {ui->groupBox, ui->groupBox_2, ui->groupBox_3};
+    for (QWidget *panel : panels) {
+        panel->setMinimumWidth(344);
+        panel->setMaximumWidth(344);
+        panel->setSizePolicy(QSizePolicy::Fixed, QSizePolicy::Fixed);
+    }
+
+    ui->groupBox->setTitle(QString());
+    ui->groupBox_2->setTitle(QString());
+    ui->groupBox_3->setTitle(QString());
+    for (QLabel *title : {connectionTitle, receiveTitle, transmitTitle})
+        title->setObjectName(QStringLiteral("sectionTitle"));
+
+    ui->verticalLayout_5->setContentsMargins(18, 16, 18, 18);
+    ui->verticalLayout_5->setSpacing(12);
+    ui->verticalLayout_5->insertWidget(0, connectionTitle);
+    ui->horizontalLayout_13->setContentsMargins(18, 16, 18, 18);
+    ui->verticalLayout_2->setSpacing(8);
+    ui->verticalLayout_2->insertWidget(0, receiveTitle);
+    ui->horizontalLayout_12->setContentsMargins(18, 16, 18, 18);
+    ui->verticalLayout_4->setSpacing(10);
+    ui->verticalLayout_4->insertWidget(0, transmitTitle);
+
+    const QList<QComboBox *> fields = {
+        ui->comboBox_serialPort,
+        ui->comboBox_baudrate,
+        ui->comboBox_databits,
+        ui->comboBox_stopbits,
+        ui->comboBox_checkdigit,
+        ui->comboBox_flowctrl
+    };
+    for (QComboBox *field : fields) {
+        field->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+        field->setMinimumWidth(168);
+        field->setMaximumWidth(QWIDGETSIZE_MAX);
+    }
+
+    const QList<QLabel *> fieldLabels = {
+        ui->label, ui->label_2, ui->DataBits, ui->label_3, ui->label_4, ui->label_5
+    };
+    ui->verticalLayout_5->removeItem(ui->formLayout);
+    delete ui->formLayout;
+    ui->formLayout = nullptr;
+    settingsGrid = new QGridLayout();
+    settingsGrid->setContentsMargins(0, 0, 0, 0);
+    settingsGrid->setHorizontalSpacing(18);
+    settingsGrid->setVerticalSpacing(6);
+    settingsGrid->setColumnStretch(0, 0);
+    settingsGrid->setColumnStretch(1, 1);
+    for (int row = 0; row < fields.size(); ++row) {
+        fieldLabels.at(row)->setAlignment(Qt::AlignLeft | Qt::AlignVCenter);
+        settingsGrid->addWidget(fieldLabels.at(row), row, 0);
+        settingsGrid->addWidget(fields.at(row), row, 1);
+    }
+    ui->verticalLayout_5->insertLayout(1, settingsGrid);
+    ui->horizontalLayout_6->setSpacing(8);
+    ui->horizontalLayout_7->setSpacing(8);
+    ui->horizontalLayout_6->setContentsMargins(0, 2, 0, 0);
+    ui->horizontalLayout_7->setContentsMargins(0, 0, 0, 0);
+    ui->horizontalLayout->setSpacing(24);
+    ui->horizontalLayout_3->setSpacing(24);
+    ui->horizontalLayout_2->setSpacing(8);
+    ui->verticalLayout_3->setContentsMargins(8, 8, 8, 8);
+    ui->verticalLayout_3->setSpacing(10);
+    ui->horizontalLayout_5->setSpacing(8);
+    ui->horizontalLayout_8->setSpacing(9);
+    ui->tabWidget->setDocumentMode(true);
+    ui->textBrowser_rec->setReadOnly(true);
+    ui->label_10->setAlignment(Qt::AlignCenter);
+
+    ui->line_3->hide();
+    ui->line_4->hide();
+    ui->pushButton_send->setMinimumWidth(112);
+    ui->pushButton_clear->setMinimumWidth(88);
+    updateLayoutMetrics();
+}
+
+void MainWindow::updateLayoutMetrics()
+{
+    const QFontMetrics metrics(font());
+    const int textHeight = metrics.height();
+    const int fieldHeight = qMax(28, textHeight + 8);
+    const int buttonHeight = qMax(30, textHeight + 10);
+    const int optionHeight = qMax(22, textHeight + 4);
+
+    for (QComboBox *field : {ui->comboBox_serialPort, ui->comboBox_baudrate,
+                              ui->comboBox_databits, ui->comboBox_stopbits,
+                              ui->comboBox_checkdigit, ui->comboBox_flowctrl}) {
+        field->setMinimumHeight(fieldHeight);
+        field->setMaximumHeight(fieldHeight);
+    }
+    ui->spinBox_repeat->setMinimumHeight(fieldHeight);
+    ui->spinBox_repeat->setMaximumHeight(fieldHeight);
+
+    for (QPushButton *button : {ui->pushButton_scan, ui->pushButton_pause,
+                                ui->pushButton_open, ui->pushButton_close,
+                                ui->pushButton_send, ui->pushButton_clear}) {
+        button->setMinimumHeight(buttonHeight);
+        button->setMaximumHeight(buttonHeight);
+    }
+
+    const QList<QWidget *> options = {
+        ui->radioButton_rec_ascii, ui->radioButton_rec_hex, ui->checkBox_wordwrap,
+        ui->checkBox_dispsend, ui->checkBox_disptime, ui->checkBox_realtime_log,
+        ui->radioButton_send_ascii,
+        ui->radioButton_send_hex, ui->checkBox_repeat
+    };
+    for (QWidget *option : options) {
+        option->setMinimumHeight(optionHeight);
+    }
+
+    const QList<QWidget *> panels = {ui->groupBox, ui->groupBox_2, ui->groupBox_3};
+    const int connectionHeight = ui->verticalLayout_5->contentsMargins().top()
+        + ui->verticalLayout_5->contentsMargins().bottom()
+        + connectionTitle->sizeHint().height()
+        + (3 * ui->verticalLayout_5->spacing())
+        + (6 * fieldHeight) + (5 * settingsGrid->verticalSpacing())
+        + (2 * buttonHeight) + 2;
+    const int receiveHeight = ui->horizontalLayout_13->contentsMargins().top()
+        + ui->horizontalLayout_13->contentsMargins().bottom()
+        + receiveTitle->sizeHint().height()
+        + (5 * ui->verticalLayout_2->spacing())
+        + (5 * optionHeight) + 2;
+    const int transmitHeight = ui->horizontalLayout_12->contentsMargins().top()
+        + ui->horizontalLayout_12->contentsMargins().bottom()
+        + transmitTitle->sizeHint().height()
+        + (2 * ui->verticalLayout_4->spacing())
+        + optionHeight + fieldHeight + 2;
+
+    ui->groupBox->setFixedHeight(connectionHeight);
+    ui->groupBox_2->setFixedHeight(receiveHeight);
+    ui->groupBox_3->setFixedHeight(transmitHeight);
+    if (QWidget *sidebarContent = ui->groupBox->parentWidget())
+        sidebarContent->setMinimumHeight(connectionHeight + receiveHeight + transmitHeight
+                                         + (2 * ui->verticalLayout_6->spacing()));
+}
+
+void MainWindow::configureLanguageSelector()
+{
+    auto *cornerWidget = new QWidget(ui->menuBar);
+    cornerWidget->setObjectName(QStringLiteral("menuControls"));
+    auto *cornerLayout = new QHBoxLayout(cornerWidget);
+    cornerLayout->setContentsMargins(0, 0, 12, 0);
+    cornerLayout->setSpacing(8);
+
+    themeSelector->setObjectName(QStringLiteral("themeSelector"));
+    themeSelector->setAccessibleName(QStringLiteral("Theme"));
+    themeSelector->addItem(QString(), QStringLiteral("system"));
+    themeSelector->addItem(QString(), QStringLiteral("light"));
+    themeSelector->addItem(QString(), QStringLiteral("dark"));
+    themeSelector->setMinimumWidth(96);
+    themeSelector->setMaximumWidth(116);
+    switch (themeMode) {
+    case UiThemeMode::System: themeSelector->setCurrentIndex(0); break;
+    case UiThemeMode::Light: themeSelector->setCurrentIndex(1); break;
+    case UiThemeMode::Dark: themeSelector->setCurrentIndex(2); break;
+    }
+    cornerLayout->addWidget(themeSelector, 0, Qt::AlignVCenter);
+
+    languageSelector->setObjectName(QStringLiteral("languageSelector"));
+    languageSelector->setAccessibleName(QStringLiteral("Language"));
+    languageSelector->addItem(QStringLiteral("English"), QStringLiteral("en"));
+    languageSelector->addItem(QString::fromUtf8("中文"), QStringLiteral("zh_CN"));
+    languageSelector->addItem(QStringLiteral("Español"), QStringLiteral("es"));
+    languageSelector->setMinimumWidth(108);
+    languageSelector->setMaximumWidth(124);
+    cornerLayout->addWidget(languageSelector, 0, Qt::AlignVCenter);
+    ui->menuBar->setCornerWidget(cornerWidget, Qt::TopRightCorner);
+
+    connect(themeSelector, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int index) {
+        const QString mode = themeSelector->itemData(index).toString();
+        if (mode == QLatin1String("dark"))
+            themeMode = UiThemeMode::Dark;
+        else if (mode == QLatin1String("light"))
+            themeMode = UiThemeMode::Light;
+        else
+            themeMode = UiThemeMode::System;
+        refreshThemeFromPreference();
+        QSettings(QStringLiteral("MULTIBEANS"), QStringLiteral("TinySerial"))
+            .setValue(QStringLiteral("ui/themeMode"), mode);
+    });
+
+    connect(languageSelector, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, [this](int index) {
+        if (index < 0)
+            return;
+        const UiLanguage language = uiLanguageFromCode(languageSelector->itemData(index).toString());
+        applyLanguage(language);
+        QSettings(QStringLiteral("MULTIBEANS"), QStringLiteral("TinySerial"))
+            .setValue(QStringLiteral("ui/language"), uiLanguageCode(language));
+    });
+}
+
+QString MainWindow::text(const char *key) const
+{
+    return uiText(currentLanguage, key);
+}
+
+bool MainWindow::systemUsesDarkTheme() const
+{
+#if QT_VERSION >= QT_VERSION_CHECK(6, 5, 0)
+    const Qt::ColorScheme scheme = qApp->styleHints()->colorScheme();
+    if (scheme == Qt::ColorScheme::Dark)
+        return true;
+    if (scheme == Qt::ColorScheme::Light)
+        return false;
+#endif
+    return qApp->palette().color(QPalette::Window).lightness() < 128;
+}
+
+void MainWindow::refreshThemeFromPreference()
+{
+    const bool useDarkTheme = themeMode == UiThemeMode::Dark
+        || (themeMode == UiThemeMode::System && systemUsesDarkTheme());
+    if (useDarkTheme == darkMode)
+        return;
+    darkMode = useDarkTheme;
+    initQssStyleSheet();
+}
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event)
+{
+    if (watched == qApp && themeMode == UiThemeMode::System
+        && event->type() == QEvent::ApplicationPaletteChange) {
+        refreshThemeFromPreference();
+    }
+    return QMainWindow::eventFilter(watched, event);
+}
+
+QString MainWindow::serialErrorText(QSerialPort::SerialPortError error) const
+{
+    switch (error) {
+    case QSerialPort::DeviceNotFoundError: return text("serial_device_not_found");
+    case QSerialPort::PermissionError: return text("serial_permission");
+    case QSerialPort::OpenError: return text("serial_open_error");
+    case QSerialPort::NotOpenError: return text("serial_not_open");
+    case QSerialPort::WriteError: return text("serial_write_error");
+    case QSerialPort::ReadError: return text("serial_read_error");
+#if QT_VERSION < QT_VERSION_CHECK(6, 0, 0)
+    case QSerialPort::ParityError:
+    case QSerialPort::FramingError:
+    case QSerialPort::BreakConditionError:
+        return text("serial_data_error");
+#endif
+    case QSerialPort::ResourceError: return text("serial_resource_error");
+    case QSerialPort::UnsupportedOperationError: return text("serial_unsupported");
+    case QSerialPort::TimeoutError: return text("serial_timeout");
+    case QSerialPort::UnknownError:
+    case QSerialPort::NoError:
+        return text("serial_unknown");
+    }
+    return text("serial_unknown");
+}
+
+void MainWindow::showWarning(const QString &title, const QString &message)
+{
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Warning);
+    box.setWindowTitle(title);
+    box.setText(message);
+    QPushButton *okButton = box.addButton(text("ok"), QMessageBox::AcceptRole);
+    box.setDefaultButton(okButton);
+    box.exec();
+}
+
+void MainWindow::showInformation(const QString &title, const QString &message)
+{
+    QMessageBox box(this);
+    box.setIcon(QMessageBox::Information);
+    box.setWindowTitle(title);
+    box.setText(message);
+    QPushButton *okButton = box.addButton(text("ok"), QMessageBox::AcceptRole);
+    box.setDefaultButton(okButton);
+    box.exec();
+}
+
+void MainWindow::applyLanguage(UiLanguage language)
+{
+    currentLanguage = language;
+    {
+        const QSignalBlocker blocker(languageSelector);
+        const int index = languageSelector->findData(uiLanguageCode(language));
+        if (index >= 0)
+            languageSelector->setCurrentIndex(index);
+    }
+
+    connectionTitle->setText(text("connection"));
+    ui->label->setText(text("serial_port"));
+    ui->label_2->setText(text("baud_rate"));
+    ui->DataBits->setText(text("data_bits"));
+    ui->label_3->setText(text("stop_bits"));
+    ui->label_4->setText(text("parity"));
+    ui->label_5->setText(text("flow_control"));
+
+    ui->comboBox_baudrate->setItemText(CONFIG_BAUDRATE_CUSTOM_INDEX, text("custom"));
+    for (int index = 0; index < ui->comboBox_databits->count(); ++index) {
+        const QString bits = QString::number(index + 5);
+        if (language == UiLanguage::Chinese)
+            ui->comboBox_databits->setItemText(index, bits + QString::fromUtf8(" 位"));
+        else if (language == UiLanguage::Spanish)
+            ui->comboBox_databits->setItemText(index, bits + QStringLiteral(" bits"));
+        else
+            ui->comboBox_databits->setItemText(index, bits + QStringLiteral(" bits"));
+    }
+    ui->comboBox_checkdigit->setItemText(0, text("none"));
+    ui->comboBox_checkdigit->setItemText(1, text("even"));
+    ui->comboBox_checkdigit->setItemText(2, text("odd"));
+    ui->comboBox_checkdigit->setItemText(3, text("space"));
+    ui->comboBox_checkdigit->setItemText(4, text("mark"));
+    ui->comboBox_flowctrl->setItemText(0, text("none"));
+    ui->comboBox_flowctrl->setItemText(1, text("hardware"));
+    ui->comboBox_flowctrl->setItemText(2, text("software"));
+
+    ui->pushButton_scan->setText(text("refresh_ports"));
+    ui->pushButton_pause->setText(text(pauseComOutput ? "resume_output" : "pause_output"));
+    ui->pushButton_open->setText(text("connect"));
+    ui->pushButton_close->setText(text("disconnect"));
+    receiveTitle->setText(text("receive"));
+    ui->checkBox_wordwrap->setText(text("word_wrap"));
+    ui->checkBox_dispsend->setText(text("display_sent"));
+    ui->checkBox_disptime->setText(text("display_time"));
+    ui->checkBox_realtime_log->setText(text("realtime_log"));
+    themeSelector->setItemText(0, text("theme_system"));
+    themeSelector->setItemText(1, text("theme_light"));
+    themeSelector->setItemText(2, text("theme_dark"));
+    transmitTitle->setText(text("transmit"));
+    ui->checkBox_repeat->setText(text("repeat_send"));
+    ui->tabWidget->setTabText(ui->tabWidget->indexOf(ui->tab), text("terminal"));
+    ui->tabWidget->setTabText(ui->tabWidget->indexOf(ui->draw), text("plotting"));
+    ui->pushButton_send->setText(text("send"));
+    ui->pushButton_clear->setText(text("clear"));
+    ui->textBrowser_rec->setPlaceholderText(text("receive_placeholder"));
+    ui->textEdit_send->setPlaceholderText(text("send_placeholder"));
+    ui->label_7->setText(text("traffic"));
+    ui->label_8->setText(text("received"));
+    ui->label_9->setText(text("sent"));
+    ui->label_10->setText(text("plotting_future"));
+
+    ui->menuFIle->setTitle(text("file"));
+    ui->menuAbout->setTitle(text("about"));
+    ui->actionSave_Log_File->setText(text("save_log"));
+    ui->actionAbout_TinySerialPort->setText(text("about_tinyserial"));
+    ui->actionAbout_MULTIBEANS->setText(text("about_multibeans"));
+    ui->statusBar->clearMessage();
+    updateLayoutMetrics();
+    setConnectionState(serial->isOpen());
+}
+
 void MainWindow::initQssStyleSheet()
 {
-    QFile qssFile(":/qss/Aqua.qss");
-    if (qssFile.open(QFile::ReadOnly | QFile::Text)) {
-        QString qss = QLatin1String(qssFile.readAll());
-        qApp->setStyleSheet(qss);
-        qssFile.close();
-        qDebug() << "QSS stylesheet loaded successfully";
-    } else {
-        qDebug() << "Failed to load QSS stylesheet:" << qssFile.errorString();
-    }
+    setStyleSheet(QStringLiteral(R"QSS(
+        QMainWindow, QDialog {
+            background: #f6f8fa;
+            color: #172b35;
+        }
+        QWidget {
+            color: #172b35;
+        }
+        QMenuBar {
+            background: #ffffff;
+            color: #172b35;
+            border-bottom: 1px solid #dbe4e8;
+            padding: 3px 12px;
+        }
+        QMenuBar::item { padding: 5px 10px; border-radius: 4px; }
+        QMenuBar::item:selected, QMenu::item:selected { background: #fff1eb; color: #dc430b; }
+        QMenu { background: #ffffff; border: 1px solid #dbe4e8; padding: 5px; }
+        QMenu::item { padding: 7px 22px; border-radius: 4px; }
+        QStatusBar {
+            background: #ffffff;
+            color: #61757f;
+            border-top: 1px solid #dbe4e8;
+            padding: 5px 12px;
+        }
+        QStatusBar::item { border: none; }
+        QScrollArea#sidebarScroll, QWidget#sidebarContent {
+            background: transparent;
+            border: none;
+        }
+        QGroupBox {
+            background: #ffffff;
+            border: 1px solid #dbe4e8;
+            border-radius: 10px;
+            margin: 0;
+            padding: 0;
+        }
+        QLabel { color: #61757f; }
+        QLabel#sectionTitle {
+            color: #172b35;
+            font-size: 14px;
+            font-weight: 600;
+            padding: 0;
+            margin: 0 0 2px 0;
+        }
+        QFrame { color: #dbe4e8; }
+        QComboBox, QSpinBox {
+            background: #ffffff;
+            border: 1px solid #dbe4e8;
+            border-radius: 6px;
+            padding: 0 10px;
+            color: #172b35;
+        }
+        QComboBox:hover, QSpinBox:hover { background: #f6f8fa; border-color: #dc430b; }
+        QComboBox:focus, QSpinBox:focus { border: 1px solid #dc430b; }
+        QComboBox::drop-down { border: 0; width: 24px; }
+        QComboBox QAbstractItemView {
+            background: #ffffff;
+            color: #172b35;
+            border: 1px solid #dbe4e8;
+            selection-background-color: #fff1eb;
+            selection-color: #172b35;
+            outline: 0;
+        }
+        QComboBox#languageSelector {
+            background: #f6f8fa;
+            border: 1px solid #dbe4e8;
+            border-radius: 15px;
+            min-height: 28px;
+            padding: 0 24px 0 12px;
+            margin: 2px 0;
+        }
+        QComboBox#languageSelector:hover, QComboBox#languageSelector:focus {
+            background: #ffffff;
+            border-color: #dc430b;
+        }
+        QWidget#menuControls { background: transparent; }
+        QComboBox#themeSelector {
+            background: #f6f8fa;
+            border: 1px solid #dbe4e8;
+            border-radius: 15px;
+            min-height: 28px;
+            padding: 0 24px 0 12px;
+            margin: 2px 0;
+            color: #61757f;
+        }
+        QComboBox#themeSelector:hover, QComboBox#themeSelector:focus {
+            background: #ffffff;
+            border-color: #dc430b;
+        }
+        QPushButton {
+            background: #ffffff;
+            border: 1px solid #dbe4e8;
+            border-radius: 7px;
+            padding: 0 14px;
+            color: #172b35;
+            font-weight: 500;
+        }
+        QPushButton:hover { background: #eef3f5; border-color: #dc430b; }
+        QPushButton:pressed { background: #e5ebee; }
+        QPushButton:disabled { background: #f6f8fa; color: #9aadb5; border-color: #dbe4e8; }
+        QPushButton#pushButton_open, QPushButton#pushButton_send {
+            background: #dc430b;
+            border-color: #dc430b;
+            color: white;
+            font-weight: 600;
+        }
+        QPushButton#pushButton_open:hover, QPushButton#pushButton_send:hover { background: #bd3607; border-color: #bd3607; }
+        QPushButton#pushButton_close { background: transparent; border-color: #e6b7bd; color: #bf3348; }
+        QPushButton#pushButton_close:hover { background: #fff0f1; border-color: #bf3348; }
+        QPushButton#pushButton_clear { background: transparent; color: #61757f; }
+        QCheckBox, QRadioButton { spacing: 7px; color: #61757f; padding: 3px 0; }
+        QCheckBox::indicator, QRadioButton::indicator {
+            width: 15px; height: 15px;
+            border: 1px solid #b8c7cd;
+            background: #ffffff;
+        }
+        QCheckBox::indicator { border-radius: 4px; }
+        QRadioButton::indicator { border-radius: 8px; }
+        QCheckBox::indicator:checked, QRadioButton::indicator:checked {
+            background: #dc430b;
+            border-color: #dc430b;
+        }
+        QPlainTextEdit#textBrowser_rec, QTextEdit#textEdit_send {
+            background: #ffffff;
+            border: 1px solid #dbe4e8;
+            border-radius: 10px;
+            padding: 10px;
+            color: #172b35;
+            selection-background-color: #fff1eb;
+        }
+        QPlainTextEdit#textBrowser_rec:focus, QTextEdit#textEdit_send:focus { border-color: #dc430b; }
+        QFileDialog QLineEdit, QFileDialog QAbstractItemView {
+            background: #ffffff;
+            color: #172b35;
+            border: 1px solid #dbe4e8;
+            selection-background-color: #fff1eb;
+            selection-color: #172b35;
+        }
+        QFileDialog QToolButton { background: transparent; border-radius: 5px; padding: 4px; }
+        QFileDialog QToolButton:hover { background: #eef3f5; }
+        QToolTip { background: #172b35; color: #ffffff; border: 1px solid #172b35; padding: 4px 7px; }
+        QTabWidget::pane { border: 0; background: transparent; }
+        QTabBar { qproperty-drawBase: 0; }
+        QTabBar::tab {
+            background: transparent;
+            color: #61757f;
+            border: 0;
+            border-bottom: 2px solid transparent;
+            padding: 12px 18px;
+            margin-right: 8px;
+            font-weight: 600;
+            min-width: 86px;
+        }
+        QTabBar::tab:selected { color: #172b35; border-bottom: 3px solid #dc430b; }
+        QTabBar::tab:hover:!selected { color: #dc430b; }
+        QLabel#labelRBytes { color: #d93900; font-weight: 700; }
+        QLabel#labelSBytes { color: #147d5b; font-weight: 700; }
+        QLabel#label_8, QLabel#label_9 { color: #61757f; }
+        QLabel#connectionIndicator {
+            background: transparent;
+            border: 0;
+            border-radius: 6px;
+            color: #61757f;
+            font-weight: 600;
+            padding: 3px 4px;
+        }
+        QLabel#connectionIndicator[connected="true"] {
+            color: #147d5b;
+        }
+        QFrame#line { border: 0; background: #dbe4e8; min-height: 1px; max-height: 1px; }
+        QFrame#line_2 { border: 0; background: #dbe4e8; min-width: 1px; max-width: 1px; }
+        QScrollBar:vertical { background: transparent; width: 9px; margin: 3px 1px; }
+        QScrollBar::handle:vertical { background: #dbe4e8; min-height: 30px; border-radius: 4px; }
+        QScrollBar::handle:vertical:hover { background: #9aadb5; }
+        QScrollBar::add-line, QScrollBar::sub-line, QScrollBar::add-page, QScrollBar::sub-page { background: transparent; border: 0; }
+    )QSS"));
+
+    if (!darkMode)
+        return;
+
+    setStyleSheet(styleSheet() + QStringLiteral(R"QSS(
+        QMainWindow, QDialog { background: #11181d; color: #e7edf0; }
+        QWidget { color: #e7edf0; }
+        QMenuBar {
+            background: #182127;
+            color: #e7edf0;
+            border-bottom-color: #30404a;
+        }
+        QMenuBar::item:selected, QMenu::item:selected { background: #3a241c; color: #ff713d; }
+        QMenu { background: #1b252b; color: #e7edf0; border-color: #34444e; }
+        QMenu::item:disabled { color: #6f808a; }
+        QStatusBar { background: #182127; color: #9babb4; border-top-color: #30404a; }
+        QScrollArea#sidebarScroll, QWidget#sidebarContent, QWidget#menuControls { background: transparent; }
+        QGroupBox { background: #192228; border-color: #30404a; }
+        QLabel { color: #9babb4; }
+        QLabel#sectionTitle { color: #eef3f5; }
+        QFrame { color: #30404a; }
+        QComboBox, QSpinBox, QFileDialog QLineEdit {
+            background: #202b32;
+            color: #e7edf0;
+            border-color: #3a4b55;
+        }
+        QComboBox:hover, QSpinBox:hover, QFileDialog QLineEdit:hover {
+            background: #253139;
+            border-color: #f05a24;
+        }
+        QComboBox:focus, QSpinBox:focus, QFileDialog QLineEdit:focus { border-color: #f05a24; }
+        QComboBox QAbstractItemView, QFileDialog QAbstractItemView {
+            background: #202b32;
+            color: #e7edf0;
+            border-color: #3a4b55;
+            selection-background-color: #3a241c;
+            selection-color: #ffffff;
+        }
+        QComboBox#languageSelector, QComboBox#themeSelector {
+            background: #202b32;
+            color: #dce5e9;
+            border-color: #3a4b55;
+        }
+        QComboBox#languageSelector:hover, QComboBox#languageSelector:focus,
+        QComboBox#themeSelector:hover, QComboBox#themeSelector:focus {
+            background: #27343c;
+            border-color: #f05a24;
+        }
+        QPushButton {
+            background: #202b32;
+            color: #e7edf0;
+            border-color: #3a4b55;
+        }
+        QPushButton:hover { background: #29363e; border-color: #f05a24; }
+        QPushButton:pressed { background: #303e47; }
+        QPushButton:disabled { background: #172027; color: #657680; border-color: #293841; }
+        QPushButton#pushButton_open, QPushButton#pushButton_send {
+            background: #e9521d;
+            border-color: #e9521d;
+            color: #ffffff;
+        }
+        QPushButton#pushButton_open:hover, QPushButton#pushButton_send:hover {
+            background: #ff6730;
+            border-color: #ff6730;
+        }
+        QPushButton#pushButton_close { color: #ff8290; border-color: #75434b; }
+        QPushButton#pushButton_close:hover { background: #392126; border-color: #ff8290; }
+        QPushButton#pushButton_clear { color: #9babb4; }
+        QCheckBox, QRadioButton { color: #aebcc3; }
+        QCheckBox::indicator, QRadioButton::indicator {
+            background: #202b32;
+            border-color: #60727c;
+        }
+        QCheckBox::indicator:checked, QRadioButton::indicator:checked {
+            background: #f05a24;
+            border-color: #f05a24;
+        }
+        QPlainTextEdit#textBrowser_rec, QTextEdit#textEdit_send {
+            background: #141c21;
+            color: #e7edf0;
+            border-color: #34444e;
+            selection-background-color: #704028;
+        }
+        QPlainTextEdit#textBrowser_rec:focus, QTextEdit#textEdit_send:focus { border-color: #f05a24; }
+        QTabBar::tab { color: #8fa1aa; }
+        QTabBar::tab:selected { color: #eef3f5; border-bottom-color: #f05a24; }
+        QTabBar::tab:hover:!selected { color: #ff713d; }
+        QLabel#labelRBytes { color: #ff713d; }
+        QLabel#labelSBytes, QLabel#connectionIndicator[connected="true"] { color: #4fc49a; }
+        QLabel#label_8, QLabel#label_9, QLabel#connectionIndicator { color: #9babb4; }
+        QFrame#line { background: #30404a; }
+        QFrame#line_2 { background: #30404a; }
+        QFileDialog QToolButton { color: #dce5e9; background: transparent; }
+        QFileDialog QToolButton:hover { background: #29363e; }
+        QToolTip { background: #27343c; color: #ffffff; border-color: #4a5c66; }
+        QScrollBar::handle:vertical { background: #3a4b55; }
+        QScrollBar::handle:vertical:hover { background: #60727c; }
+    )QSS"));
+}
+
+void MainWindow::setConnectionState(bool connected)
+{
+    connectionIndicator->setProperty("connected", connected);
+    connectionIndicator->setText(text(connected ? "connected" : "disconnected"));
+    connectionIndicator->style()->unpolish(connectionIndicator);
+    connectionIndicator->style()->polish(connectionIndicator);
 }
 
 void MainWindow::on_pushButton_pause_clicked()
 {
     if (pauseComOutput == false) {
         pauseComOutput = true;
-        ui->pushButton_pause->setText("start");
+        ui->pushButton_pause->setText(text("resume_output"));
     } else {
         pauseComOutput = false;
-        ui->pushButton_pause->setText("pause");
+        ui->pushButton_pause->setText(text("pause_output"));
     }
 }
 
@@ -417,8 +1121,8 @@ void MainWindow::on_actionAbout_TinySerialPort_triggered()
 {
     if (!aboutDialog) {
         aboutDialog = new AboutDialog(this);
-        aboutDialog->setWindowTitle("About");
     }
+    aboutDialog->setLanguage(currentLanguage);
     aboutDialog->setModal(true);
     aboutDialog->show();
     aboutDialog->raise();
@@ -427,9 +1131,7 @@ void MainWindow::on_actionAbout_TinySerialPort_triggered()
 
 void MainWindow::on_actionAbout_MULTIBEANS_triggered()
 {
-    QMessageBox::information(this,
-                             tr("About MULTIBEANS"),
-                             tr("TinySerial is part of the MULTIBEANS project.\nhttps://github.com/carloscn/tinyserial"));
+    showInformation(text("about_multibeans"), text("about_multibeans_body"));
 }
 
 void MainWindow::on_checkBox_dispsend_clicked(bool checked)
@@ -442,37 +1144,88 @@ void MainWindow::on_checkBox_disptime_clicked(bool checked)
     isShowTime = checked;
 }
 
+void MainWindow::on_checkBox_realtime_log_clicked(bool checked)
+{
+    if (!checked) {
+        stopRealtimeLog();
+        ui->statusBar->showMessage(text("realtime_log_stopped"), 3000);
+        return;
+    }
+
+    QFileDialog dialog(this, text("realtime_log_title"));
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    dialog.setFileMode(QFileDialog::AnyFile);
+    dialog.setNameFilters(text("log_files").split(QStringLiteral(";;")));
+    dialog.setDefaultSuffix(QStringLiteral("log"));
+    dialog.setDirectory(realtimeLogDirectory());
+    dialog.selectFile(QStringLiteral("tinyserial-%1.log")
+                      .arg(QDateTime::currentDateTime().toString(QStringLiteral("yyyyMMdd-HHmmss"))));
+    dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    dialog.setLabelText(QFileDialog::LookIn, text("look_in"));
+    dialog.setLabelText(QFileDialog::FileName, text("file_name"));
+    dialog.setLabelText(QFileDialog::FileType, text("file_type"));
+    dialog.setLabelText(QFileDialog::Accept, text("start_logging"));
+    dialog.setLabelText(QFileDialog::Reject, text("cancel"));
+
+    if (dialog.exec() != QDialog::Accepted || dialog.selectedFiles().isEmpty()) {
+        stopRealtimeLog();
+        return;
+    }
+
+    realtimeLogFile->setFileName(dialog.selectedFiles().constFirst());
+    if (!realtimeLogFile->open(QIODevice::WriteOnly | QIODevice::Truncate | QIODevice::Text)) {
+        qWarning() << "Could not create real-time log:" << realtimeLogFile->errorString();
+        stopRealtimeLog();
+        showWarning(text("warning"), text("realtime_log_failed"));
+        return;
+    }
+
+    ui->checkBox_realtime_log->setToolTip(realtimeLogFile->fileName());
+    ui->statusBar->showMessage(text("realtime_log_started").arg(realtimeLogFile->fileName()), 5000);
+}
+
 void MainWindow::on_actionSave_Log_File_triggered()
 {
     if (ui->textBrowser_rec->toPlainText().isEmpty()) {
-        QMessageBox::warning(this, "Warning", "The text browser is blank! Can't be saved.\n");
+        showWarning(text("warning"), text("empty_log"));
         return;
     }
-    QString fileName = QFileDialog::getSaveFileName(
-                this,
-                tr("Save as a log file"),
-                QString(),
-                tr("Text files (*.txt);;All files (*.*)"));
+    QFileDialog dialog(this, text("save_log_as"));
+    dialog.setAcceptMode(QFileDialog::AcceptSave);
+    dialog.setFileMode(QFileDialog::AnyFile);
+    dialog.setNameFilters(text("text_files").split(QStringLiteral(";;")));
+    dialog.setDefaultSuffix(QStringLiteral("txt"));
+    dialog.setOption(QFileDialog::DontUseNativeDialog, true);
+    dialog.setLabelText(QFileDialog::LookIn, text("look_in"));
+    dialog.setLabelText(QFileDialog::FileName, text("file_name"));
+    dialog.setLabelText(QFileDialog::FileType, text("file_type"));
+    dialog.setLabelText(QFileDialog::Accept, text("save"));
+    dialog.setLabelText(QFileDialog::Reject, text("cancel"));
+    if (dialog.exec() != QDialog::Accepted || dialog.selectedFiles().isEmpty())
+        return;
+    const QString fileName = dialog.selectedFiles().constFirst();
     if (fileName.isEmpty()) {
         return;  // User cancelled
     }
     
     QFile file(fileName);
     if (!file.open(QFile::WriteOnly | QFile::Text)) {
-        QMessageBox::warning(this, "Warning", 
-            QString("Failed to create log file!\n%1").arg(file.errorString()));
+        qWarning() << "Could not create log file:" << file.errorString();
+        showWarning(text("warning"), text("save_failed"));
         return;
     }
     
     QTextStream stream(&file);
     stream << ui->textBrowser_rec->toPlainText();
     file.close();
-    QMessageBox::information(this, "Info", "Saved log file:\n" + fileName);
+    showInformation(text("information"), text("saved_log").arg(fileName));
 }
 
-void MainWindow::on_comboBox_serialPort_currentIndexChanged(const QString &arg1)
+void MainWindow::on_comboBox_serialPort_currentIndexChanged(int index)
 {
-    ui->comboBox_serialPort->setToolTip(arg1);
+    ui->comboBox_serialPort->setToolTip(index >= 0
+                                       ? ui->comboBox_serialPort->itemText(index)
+                                       : QString());
 }
 
 
@@ -672,7 +1425,13 @@ void MainWindow::sendData(const QString &input, bool showInDisplay)
     } else {
         QString error;
         if (!SerialCodec::decodeHex(input, &dataToSend, &error)) {
-            QMessageBox::warning(this, tr("Invalid HEX data"), error);
+            if (error == QStringLiteral("HEX data is empty."))
+                error = text("hex_empty");
+            else if (error == QStringLiteral("HEX data must contain complete bytes (an even number of digits)."))
+                error = text("hex_incomplete");
+            else if (error == QStringLiteral("HEX data may only contain digits A-F and whitespace."))
+                error = text("hex_characters");
+            showWarning(text("invalid_hex"), error);
             return;
         }
     }
@@ -680,14 +1439,62 @@ void MainWindow::sendData(const QString &input, bool showInDisplay)
     if (serial->isOpen()) {
         qint64 bytesWritten = serial->write(dataToSend);
         if (bytesWritten == -1) {
-            QMessageBox::warning(this, "Warning", "Failed to write data to serial port!");
+            showWarning(text("warning"), text("write_failed"));
             return;
         }
 
+        const QString formattedData = formatSendData(dataToSend, sendAsciiFormat);
+        appendRealtimeLog(formattedData);
         if (showInDisplay) {
-            queueDisplayText(formatSendData(dataToSend, sendAsciiFormat));
+            queueDisplayText(formattedData);
         }
     }
+}
+
+void MainWindow::appendRealtimeLog(const QString &data)
+{
+    if (!realtimeLogFile->isOpen() || data.isEmpty())
+        return;
+
+    const QByteArray encoded = data.toUtf8();
+    if (realtimeLogFile->write(encoded) == encoded.size())
+        return;
+
+    qWarning() << "Could not write real-time log:" << realtimeLogFile->errorString();
+    stopRealtimeLog();
+    showWarning(text("warning"), text("realtime_log_write_failed"));
+}
+
+void MainWindow::stopRealtimeLog()
+{
+    if (realtimeLogFile->isOpen()) {
+        realtimeLogFile->flush();
+        realtimeLogFile->close();
+    }
+    realtimeLogFile->setFileName(QString());
+    if (ui) {
+        const QSignalBlocker blocker(ui->checkBox_realtime_log);
+        ui->checkBox_realtime_log->setChecked(false);
+        ui->checkBox_realtime_log->setToolTip(QString());
+    }
+}
+
+QString MainWindow::realtimeLogDirectory() const
+{
+#if defined(Q_OS_LINUX)
+    const QString systemLogDirectory = QStringLiteral("/var/log/tinyserial");
+    const QDir systemDirectory(systemLogDirectory);
+    if ((systemDirectory.exists() || QDir().mkpath(systemLogDirectory))
+        && QFileInfo(systemLogDirectory).isWritable()) {
+        return systemLogDirectory;
+    }
+#endif
+
+    const QString userLogDirectory =
+        QStandardPaths::writableLocation(QStandardPaths::AppLocalDataLocation)
+        + QStringLiteral("/logs");
+    QDir().mkpath(userLogDirectory);
+    return userLogDirectory;
 }
 
 void MainWindow::queueDisplayText(const QString &text)
@@ -747,7 +1554,7 @@ void MainWindow::onSerialError(QSerialPort::SerialPortError error)
     if (error == QSerialPort::NoError || !serial->isOpen())
         return;
 
-    const QString message = tr("Serial port error: %1").arg(serial->errorString());
+    const QString message = text("serial_error").arg(serialErrorText(error));
     ui->statusBar->showMessage(message, 5000);
     qWarning() << message;
 }

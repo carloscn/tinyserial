@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1082</width>
-    <height>664</height>
+    <width>1240</width>
+    <height>760</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,12 +15,30 @@
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QHBoxLayout" name="horizontalLayout_4">
+    <property name="spacing">
+     <number>16</number>
+    </property>
+    <property name="leftMargin">
+     <number>16</number>
+    </property>
+    <property name="topMargin">
+     <number>16</number>
+    </property>
+    <property name="rightMargin">
+     <number>16</number>
+    </property>
+    <property name="bottomMargin">
+     <number>12</number>
+    </property>
     <item>
      <layout class="QVBoxLayout" name="verticalLayout_6">
+      <property name="spacing">
+       <number>12</number>
+      </property>
       <item>
        <widget class="QGroupBox" name="groupBox">
         <property name="title">
-         <string>Serial Port Configration:</string>
+         <string>Connection</string>
         </property>
         <layout class="QVBoxLayout" name="verticalLayout_5">
          <item>
@@ -34,24 +52,6 @@
            </item>
            <item row="0" column="1">
             <widget class="QComboBox" name="comboBox_serialPort">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>128</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>128</width>
-               <height>16777215</height>
-              </size>
-             </property>
              <item>
               <property name="text">
                <string>None</string>
@@ -68,24 +68,6 @@
            </item>
            <item row="1" column="1">
             <widget class="QComboBox" name="comboBox_baudrate">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>128</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>128</width>
-               <height>16777215</height>
-              </size>
-             </property>
              <item>
               <property name="text">
                <string>1200</string>
@@ -142,24 +124,6 @@
            </item>
            <item row="2" column="1">
             <widget class="QComboBox" name="comboBox_databits">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>128</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>128</width>
-               <height>16777215</height>
-              </size>
-             </property>
              <item>
               <property name="text">
                <string>5 Bits</string>
@@ -191,24 +155,6 @@
            </item>
            <item row="3" column="1">
             <widget class="QComboBox" name="comboBox_stopbits">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>128</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>128</width>
-               <height>16777215</height>
-              </size>
-             </property>
              <item>
               <property name="text">
                <string>1</string>
@@ -229,30 +175,12 @@
            <item row="4" column="0">
             <widget class="QLabel" name="label_4">
              <property name="text">
-              <string>Partity:</string>
+              <string>Parity:</string>
              </property>
             </widget>
            </item>
            <item row="4" column="1">
             <widget class="QComboBox" name="comboBox_checkdigit">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>128</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>128</width>
-               <height>16777215</height>
-              </size>
-             </property>
              <item>
               <property name="text">
                <string>None</string>
@@ -289,27 +217,9 @@
            </item>
            <item row="5" column="1">
             <widget class="QComboBox" name="comboBox_flowctrl">
-             <property name="sizePolicy">
-              <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-               <horstretch>0</horstretch>
-               <verstretch>0</verstretch>
-              </sizepolicy>
-             </property>
-             <property name="minimumSize">
-              <size>
-               <width>128</width>
-               <height>0</height>
-              </size>
-             </property>
-             <property name="maximumSize">
-              <size>
-               <width>128</width>
-               <height>16777215</height>
-              </size>
-             </property>
              <item>
               <property name="text">
-               <string>Disable</string>
+              <string>None</string>
               </property>
              </item>
              <item>
@@ -331,14 +241,14 @@
            <item>
             <widget class="QPushButton" name="pushButton_scan">
              <property name="text">
-              <string>scan</string>
+              <string>Refresh ports</string>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_pause">
              <property name="text">
-              <string>pause</string>
+              <string>Pause output</string>
              </property>
             </widget>
            </item>
@@ -349,14 +259,14 @@
            <item>
             <widget class="QPushButton" name="pushButton_open">
              <property name="text">
-              <string>open</string>
+              <string>Connect</string>
              </property>
             </widget>
            </item>
            <item>
             <widget class="QPushButton" name="pushButton_close">
              <property name="text">
-              <string>close</string>
+              <string>Disconnect</string>
              </property>
             </widget>
            </item>
@@ -368,7 +278,7 @@
       <item>
        <widget class="QGroupBox" name="groupBox_2">
         <property name="title">
-         <string>Recived Configration:</string>
+         <string>Receive</string>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_13">
          <item>
@@ -415,6 +325,13 @@
              </property>
             </widget>
            </item>
+           <item>
+            <widget class="QCheckBox" name="checkBox_realtime_log">
+             <property name="text">
+              <string>Real-time logging</string>
+             </property>
+            </widget>
+           </item>
           </layout>
          </item>
         </layout>
@@ -423,7 +340,7 @@
       <item>
        <widget class="QGroupBox" name="groupBox_3">
         <property name="title">
-         <string>Send Configration:</string>
+         <string>Transmit</string>
         </property>
         <layout class="QHBoxLayout" name="horizontalLayout_12">
          <item>
@@ -491,16 +408,13 @@
       </property>
       <widget class="QWidget" name="tab">
        <attribute name="title">
-        <string>Word Trans</string>
+         <string>Terminal</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
          <layout class="QVBoxLayout" name="verticalLayout_8">
           <item>
            <widget class="QPlainTextEdit" name="textBrowser_rec">
-            <property name="styleSheet">
-             <string notr="true">font: 12pt &quot;Lucida Console&quot;;</string>
-            </property>
            </widget>
           </item>
           <item>
@@ -517,9 +431,6 @@
               <height>120</height>
              </size>
             </property>
-            <property name="styleSheet">
-             <string notr="true">font: 12pt &quot;Lucida Console&quot;;</string>
-            </property>
            </widget>
           </item>
           <item>
@@ -527,14 +438,14 @@
             <item>
              <widget class="QPushButton" name="pushButton_send">
               <property name="text">
-               <string>send</string>
+              <string>Send</string>
               </property>
              </widget>
             </item>
             <item>
              <widget class="QPushButton" name="pushButton_clear">
               <property name="text">
-               <string>clear</string>
+              <string>Clear</string>
               </property>
              </widget>
             </item>
@@ -554,7 +465,7 @@
           <item>
            <widget class="QLabel" name="label_7">
             <property name="text">
-             <string>S/R Count:         </string>
+             <string>Traffic</string>
             </property>
            </widget>
           </item>
@@ -574,19 +485,13 @@
           </item>
           <item>
            <widget class="QLabel" name="label_8">
-            <property name="styleSheet">
-             <string notr="true">color: rgb(204, 0, 0);</string>
-            </property>
             <property name="text">
-             <string>Received Bytes:</string>
+             <string>Received</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QLabel" name="labelRBytes">
-            <property name="styleSheet">
-             <string notr="true">color: rgb(204, 0, 0);</string>
-            </property>
             <property name="text">
              <string>0</string>
             </property>
@@ -601,19 +506,13 @@
           </item>
           <item>
            <widget class="QLabel" name="label_9">
-            <property name="styleSheet">
-             <string notr="true">color: rgb(32, 74, 135);</string>
-            </property>
             <property name="text">
-             <string>Send Bytes:</string>
+             <string>Sent</string>
             </property>
            </widget>
           </item>
           <item>
            <widget class="QLabel" name="labelSBytes">
-            <property name="styleSheet">
-             <string notr="true">color: rgb(32, 74, 135);</string>
-            </property>
             <property name="text">
              <string>0</string>
             </property>
@@ -625,13 +524,13 @@
       </widget>
       <widget class="QWidget" name="draw">
        <attribute name="title">
-        <string>Draw Trans</string>
+        <string>Plotting</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout">
         <item>
          <widget class="QLabel" name="label_10">
           <property name="text">
-           <string>Later.</string>
+          <string>Plotting will be available in a future release.</string>
           </property>
          </widget>
         </item>

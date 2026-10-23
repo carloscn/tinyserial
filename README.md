@@ -10,6 +10,8 @@
 [![Platform](https://img.shields.io/badge/platform-Linux%20%7C%20Windows-lightgrey.svg)](https://github.com/carloscn/tinyserial)
 [![Qt](https://img.shields.io/badge/Qt-5.15%2B-green.svg)](https://www.qt.io/)
 
+🌐 **Website:** [tinyserial.mltz.tech](https://tinyserial.mltz.tech/)
+
 </div>
 
 ## 📖 Overview
@@ -165,6 +167,7 @@ cd tinyserial
 - **Display Options**: Toggle timestamp and send/receive indicators
 - **Pause Output**: Temporarily pause receiving data display
 - **Custom Baud Rate**: Enter custom baud rate values
+- **Real-time Logging**: Enable the checkbox to continuously write serial traffic to a log file. Packaged Linux installs default to `/var/log/tinyserial`; other builds fall back to the current user's application data directory when that location is not writable.
 
 ## 🛠️ Troubleshooting
 
@@ -242,6 +245,7 @@ This project is licensed under the Mozilla Public License 2.0 (MPL-2.0). See the
 If you encounter any issues or have questions:
 
 - 📧 Email: carlos.wei.hk@gmail.com
+- 🌐 [TinySerial website](https://tinyserial.mltz.tech/)
 - 🐛 [Report Issues](https://github.com/carloscn/tinyserial/issues)
 - 📖 [Documentation](tinyserial-deb-prj/README.md)
 

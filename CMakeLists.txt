@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
 
-project(TinySerial VERSION 1.5.4 LANGUAGES CXX)
+project(TinySerial VERSION 2.0.0 LANGUAGES CXX)
 
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
@@ -20,6 +20,8 @@ set(TINYSERIAL_SOURCES
     aboutdialog.h
     serialcodec.cpp
     serialcodec.h
+    uilanguage.cpp
+    uilanguage.h
     serialport.ui
     aboutdialog.ui
     resource/resource.qrc
@@ -43,4 +45,9 @@ if(BUILD_TESTING)
     target_include_directories(tst_serialcodec PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(tst_serialcodec PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Test)
     add_test(NAME serialcodec COMMAND tst_serialcodec)
+
+    add_executable(tst_uilanguage tests/tst_uilanguage.cpp uilanguage.cpp uilanguage.h)
+    target_include_directories(tst_uilanguage PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(tst_uilanguage PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Test)
+    add_test(NAME uilanguage COMMAND tst_uilanguage)
 endif()

@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 
+LOG_DIR=/var/log/tinyserial
+if getent group dialout >/dev/null 2>&1; then
+    install -d -o root -g dialout -m 2775 "$LOG_DIR"
+else
+    install -d -o root -g root -m 0755 "$LOG_DIR"
+fi
+
 # Older packages deleted these paths from their postrm during upgrade, after
 # the new files had already been unpacked. Copies under /usr/lib/tinyserial
 # are not touched by that script, so put the public files back when missing.
@@ -34,3 +41,4 @@ fi
 
 echo "TinySerial installed."
 echo "Open it from the application menu, or run: tinyserial"
+echo "Real-time logs default to: $LOG_DIR"

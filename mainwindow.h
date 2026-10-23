@@ -28,10 +28,23 @@
 #include "global.h"
 #include <QValidator>
 #include "aboutdialog.h"
+#include "uilanguage.h"
 
 namespace Ui {
 class SerialPort;
 }
+
+class QLabel;
+class QComboBox;
+class QFile;
+class QGridLayout;
+class QEvent;
+
+enum class UiThemeMode {
+    System,
+    Light,
+    Dark
+};
 
 class MainWindow : public QMainWindow
 {
@@ -40,6 +53,9 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow(QWidget *parent = 0);
     ~MainWindow();
+
+protected:
+    bool eventFilter(QObject *watched, QEvent *event) override;
 
 private slots:
     void on_pushButton_open_clicked();
@@ -91,11 +107,13 @@ private slots:
 
     void on_actionSave_Log_File_triggered();
 
-    void on_comboBox_serialPort_currentIndexChanged(const QString &arg1);
+    void on_comboBox_serialPort_currentIndexChanged(int index);
 
     void on_comboBox_baudrate_editTextChanged(const QString &arg1);
 
     void on_checkBox_wordwrap_clicked(bool checked);
+
+    void on_checkBox_realtime_log_clicked(bool checked);
 
     void flushPendingDisplay();
     void onSerialBytesWritten(qint64 bytes);
@@ -111,6 +129,15 @@ private:
     QTimer *portWatchTimer;
     QTimer *displayFlushTimer;
     QSerialPort *serial;
+    QFile *realtimeLogFile;
+    QLabel *connectionIndicator;
+    QLabel *connectionTitle;
+    QLabel *receiveTitle;
+    QLabel *transmitTitle;
+    QComboBox *languageSelector;
+    QComboBox *themeSelector;
+    QGridLayout *settingsGrid;
+    UiLanguage currentLanguage;
     QString currentConnectCom;
     QValidator *validator_combox_baudrate;
     QString pendingDisplay;
@@ -121,12 +148,28 @@ private:
     bool sendAsciiFormat;
     bool repeatSend;
     bool pauseComOutput;
+    UiThemeMode themeMode;
+    bool darkMode;
 
     void RefreshTheUSBList();
 
     // Helper functions for code reuse
     void configureSerialPort();
     void initQssStyleSheet();
+    void configureLayout();
+    void updateLayoutMetrics();
+    void configureLanguageSelector();
+    void refreshThemeFromPreference();
+    bool systemUsesDarkTheme() const;
+    void applyLanguage(UiLanguage language);
+    QString text(const char *key) const;
+    QString serialErrorText(QSerialPort::SerialPortError error) const;
+    void showWarning(const QString &title, const QString &message);
+    void showInformation(const QString &title, const QString &message);
+    void appendRealtimeLog(const QString &data);
+    void stopRealtimeLog();
+    QString realtimeLogDirectory() const;
+    void setConnectionState(bool connected);
     void setBaudRate(int index);
     void setStopBits(int index);
     void setParity(int index);

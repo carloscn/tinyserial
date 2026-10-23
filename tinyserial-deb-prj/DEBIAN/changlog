@@ -1,3 +1,13 @@
+tinyserial (2.0.0) unstable; urgency=medium
+
+  * Redesign the interface with disciplined responsive layouts
+  * Add English, Chinese, and Spanish interface languages
+  * Add persistent light and dark themes
+  * Add real-time serial logging with a packaged /var/log/tinyserial directory
+  * Support Qt 5 and Qt 6 builds
+
+ -- Carlos Wei <carlos.wei.hk@gmail.com>  Fri, 23 Oct 2026 13:00:00 +0200
+
 tinyserial (1.5.4) unstable; urgency=medium
 
   * Refresh the serial-port list when a device is plugged or unplugged
