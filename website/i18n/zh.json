@@ -46,5 +46,8 @@
   "final.sub": "TinySerial 从 2018 年开始开发，至今仍在维护。欢迎提 Issue 和 Pull Request。",
   "final.cta1": "提交 Issue",
   "final.cta2": "更新日志",
-  "foot.blog": "博客"
+  "foot.blog": "博客",
+  "inst.tab4": "离线 .deb",
+  "inst.deb": "不想添加 apt 软件源？可以从 GitHub Releases 下载对应你 Ubuntu 版本的 <code>.deb</code>，比如 24.04 用 <code>tinyserial_2.0.0_ubuntu24.04_amd64.deb</code>，再用 apt 安装，Qt 依赖会一起装好。",
+  "inst.debbtn": "到 GitHub Releases 下载"
 }

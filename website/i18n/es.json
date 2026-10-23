@@ -46,5 +46,8 @@
   "final.sub": "TinySerial existe desde 2018 y se sigue manteniendo. Las issues y los pull requests son bienvenidos.",
   "final.cta1": "Abrir una issue",
   "final.cta2": "Notas de versión",
-  "foot.blog": "Blog"
+  "foot.blog": "Blog",
+  "inst.tab4": ".deb sin conexión",
+  "inst.deb": "¿Prefieres no añadir un repositorio apt? Descarga el <code>.deb</code> de tu versión de Ubuntu desde GitHub Releases, por ejemplo <code>tinyserial_2.0.0_ubuntu24.04_amd64.deb</code> en la 24.04, e instálalo con apt para que se instalen también las bibliotecas de Qt.",
+  "inst.debbtn": "Descargar desde GitHub Releases"
 }

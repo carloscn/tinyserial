@@ -203,7 +203,9 @@ h2 { font-size: clamp(28px, 3.6vw, 42px); letter-spacing: -.025em; line-height: 
 }
 .copy:hover { background: rgba(255,255,255,.14); }
 .note { color: var(--ink-3); font-size: 14px; margin-top: 14px; }
-.note code, .sub code { font-family: var(--mono); font-size: .92em; background: var(--card); border: 1px solid var(--line); padding: 1px 6px; border-radius: 5px; color: var(--ink-2); }
+.deb p { color: var(--ink-2); margin: 0 0 16px; max-width: 680px; }
+.deb .code { margin-top: 16px; }
+.note code, .sub code, .deb code { font-family: var(--mono); font-size: .92em; background: var(--card); border: 1px solid var(--line); padding: 1px 6px; border-radius: 5px; color: var(--ink-2); }
 [hidden] { display: none !important; }
 
 /* final cta */
@@ -350,6 +352,7 @@ footer a:hover { color: var(--ink); }
 
       <div class="tabs" role="tablist">
         <button class="tab" role="tab" aria-selected="true" data-tab="apt">Ubuntu (apt)</button>
+        <button class="tab" role="tab" aria-selected="false" data-tab="deb" data-i18n="inst.tab4">Offline .deb</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="src" data-i18n="inst.tab2">Build with qmake</button>
         <button class="tab" role="tab" aria-selected="false" data-tab="cmake" data-i18n="inst.tab3">Build with CMake</button>
       </div>
@@ -371,6 +374,19 @@ footer a:hover { color: var(--ink); }
   sudo apt-get install -y tinyserial
   sudo usermod -a -G dialout "$USER"
 )</pre>
+      </div>
+
+      <div class="deb" data-panel="deb" hidden>
+        <p data-i18n-html="inst.deb">Prefer not to add an apt repository? Download the <code>.deb</code> for your Ubuntu release from GitHub Releases, for example <code>tinyserial_2.0.0_ubuntu24.04_amd64.deb</code> on 24.04, and install it with apt so the Qt libraries come along.</p>
+        <a class="btn" href="https://github.com/carloscn/tinyserial/releases/latest">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 3v10m0 0l-4-4m4 4l4-4M4 17h12"/></svg>
+          <span data-i18n="inst.debbtn">Download from GitHub Releases</span>
+        </a>
+        <div class="code">
+          <button class="copy" type="button" data-i18n="copy">Copy</button>
+<pre>sudo apt install ./tinyserial_2.0.0_ubuntu24.04_amd64.deb
+sudo usermod -a -G dialout "$USER"</pre>
+        </div>
       </div>
 
       <div class="code" data-panel="src" hidden>
