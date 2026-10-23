@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title data-i18n="meta.title">TinySerial — a small, fast serial port terminal</title>
-<meta name="description" data-i18n-content="meta.desc" content="TinySerial is an open-source Qt serial port debugging tool for Linux, Windows and macOS. ASCII and HEX, auto-repeat, timestamps, logging, hot-plug detection.">
+<meta name="description" data-i18n-content="meta.desc" content="TinySerial is an open-source Qt serial port terminal for Linux, Windows and macOS: text and HEX in many encodings, a full terminal mode, timeline, XMODEM/YMODEM file transfer, logging and hot-plug detection.">
 <meta property="og:title" content="TinySerial">
 <meta property="og:description" data-i18n-content="meta.og" content="A small, fast serial port terminal for embedded developers.">
 <meta property="og:image" content="https://tinyserial.mltz.tech/assets/v2.1-light.webp">
@@ -176,7 +176,9 @@ h2 { font-size: clamp(28px, 3.6vw, 42px); letter-spacing: -.025em; line-height: 
 
 /* platforms */
 .split { display: grid; grid-template-columns: 1fr 1.25fr; gap: 56px; align-items: center; }
-@media (max-width: 880px) { .split { grid-template-columns: 1fr; gap: 36px; } }
+.split.rev { grid-template-columns: 1.25fr 1fr; margin-top: 48px; }
+.showcase-t { font-size: 22px; letter-spacing: -.015em; margin: 0 0 10px; color: var(--ink); }
+@media (max-width: 880px) { .split, .split.rev { grid-template-columns: 1fr; gap: 36px; } }
 .checks { list-style: none; padding: 0; margin: 28px 0 0; display: grid; gap: 12px; }
 .checks li { display: flex; gap: 12px; color: var(--ink-2); }
 .checks li::before { content: ""; flex: none; width: 18px; height: 18px; margin-top: 3px; border-radius: 50%; background: color-mix(in srgb, var(--rx) 16%, transparent) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%2301a816' stroke-width='2.4' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5.5 10.5l3 3 6-7'/%3E%3C/svg%3E") center/14px no-repeat; }
@@ -291,7 +293,7 @@ footer a:hover { color: var(--ink); }
         </div>
         <div class="feature">
           <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M4 12h10M4 17h6M17 14l3 3-3 3"/></svg></div>
-          <h3 data-i18n="f2.t">ASCII and HEX</h3>
+          <h3 data-i18n="f2.t">Text and HEX</h3>
           <p data-i18n="f2.d">Send and receive in either format, chosen separately for each direction. Malformed HEX is rejected before it reaches the wire.</p>
         </div>
         <div class="feature">
@@ -330,13 +332,36 @@ footer a:hover { color: var(--ink); }
       <div class="eyebrow" data-i18n="v210.eyebrow">New in v2.1.0</div>
       <h2 data-i18n="v210.title">A terminal workflow built for the bench.</h2>
       <p class="sub" data-i18n="v210.sub">A keyboard-first terminal, reliable logging and file transfer—without hiding the serial settings you need.</p>
+
+      <div class="split rev">
+        <img src="/assets/v2.1-terminal.webp" width="1242" height="960" loading="lazy" alt="TinySerial full terminal mode: a dark terminal with port settings, Disconnect, Real-time logging and Open log folder in a toolbar" style="border-radius:12px;border:1px solid var(--line);box-shadow:var(--shadow);height:auto">
+        <div>
+          <h3 class="showcase-t" data-i18n="v210.term.t">Full terminal mode</h3>
+          <p class="sub" data-i18n="v210.term.d">Like minicom, but configured with clicks. Every key goes straight to the device, Ctrl+A to Ctrl+Z, Enter, Tab, Backspace and Esc included, while port, baud rate, framing, flow control and logging stay in a toolbar above the terminal.</p>
+          <ul class="checks">
+            <li><span data-i18n-html="v210.l1"><b>Visual configuration</b> — pick the port and settings in the toolbar; no key menus, no config files</span></li>
+            <li><span data-i18n-html="v210.l2"><b>Log management</b> — start real-time logging and open the log folder from the toolbar; a custom folder is remembered</span></li>
+            <li><span data-i18n-html="v210.l3"><b>Built for reading</b> — fixed dark monospace surface, adjustable font and scrollback, RX/TX lamps, errors in red and OKs in green</span></li>
+          </ul>
+        </div>
+      </div>
+
       <div class="features">
-        <div class="feature"><h3 data-i18n="v210.f1.t">Full terminal mode</h3><p data-i18n="v210.f1.d">Type directly to the device with a visible caret and common control keys. Keep the port and connection controls in view.</p></div>
-        <div class="feature"><h3 data-i18n="v210.f2.t">Terminal that looks like one</h3><p data-i18n="v210.f2.d">A fixed dark, monospace terminal surface in either app theme, with configurable font and retained-text cache.</p></div>
-        <div class="feature"><h3 data-i18n="v210.f3.t">See device status faster</h3><p data-i18n="v210.f3.d">RX/TX lamps show live activity. Error and failure words are red; OK and success words are green.</p></div>
-        <div class="feature"><h3 data-i18n="v210.f4.t">Protocol-accurate text</h3><p data-i18n="v210.f4.d">Choose common legacy encodings, C-style escape sequences and the line ending appended to text sends.</p></div>
-        <div class="feature"><h3 data-i18n="v210.f5.t">Logging you can find</h3><p data-i18n="v210.f5.d">Start real-time logging from either mode, remember a custom directory and open it directly from the File menu.</p></div>
-        <div class="feature"><h3 data-i18n="v210.f6.t">XMODEM and YMODEM</h3><p data-i18n="v210.f6.d">Send or receive files with XMODEM checksum, CRC or 1K, plus YMODEM, with progress and cancellation.</p></div>
+        <div class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg></div>
+          <h3 data-i18n="v210.tl.t">Timeline tracking</h3>
+          <p data-i18n="v210.tl.d">Every received line, every send and each connect or disconnect, with millisecond times and how long the device took to answer. Filter, search, and export to CSV or JSON Lines.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 00-2 2v14a2 2 0 002 2h12a2 2 0 002-2V9l-6-6z"/><path d="M14 3v6h6M12 18v-6M9 15l3 3 3-3"/></svg></div>
+          <h3 data-i18n="v210.x.t">XMODEM and YMODEM</h3>
+          <p data-i18n="v210.x.d">Send and receive files with XMODEM (checksum, CRC, 1K) or YMODEM from the File menu, with progress and cancel. Protocol bytes stay out of the terminal.</p>
+        </div>
+        <div class="feature">
+          <div class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h7M7.5 5v14M14 19l3.5-9 3.5 9M15.2 16h4.6"/></svg></div>
+          <h3 data-i18n="v210.enc.t">Text in many encodings</h3>
+          <p data-i18n="v210.enc.d">Text mode handles UTF-8, GB18030, GBK, GB2312, Big5, Shift-JIS, EUC-KR, ISO-8859-1, Windows-1252 and the system encoding. C-style escapes and a chosen line ending reproduce protocols byte for byte.</p>
+        </div>
       </div>
     </div>
   </section>
