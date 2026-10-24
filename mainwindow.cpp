@@ -28,6 +28,7 @@
 #include <QFileInfo>
 #include <QFormLayout>
 #include <QGridLayout>
+#include <QGroupBox>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -54,6 +55,7 @@
 #include <QSerialPortInfo>
 #include <utility>
 #include <QSignalBlocker>
+#include <QSpinBox>
 #include <QTableView>
 #include <QTabBar>
 #include <QTextCursor>
@@ -396,6 +398,7 @@ void MainWindow::on_pushButton_open_clicked()
         setFileTransferUi(false);
         setConnectionState(true);
         recordSystemEvent(text("ev_connected").arg(currentConnectCom, connectionSummary()));
+        startModemMonitoring();
         showInformation(text("information"), text("open_ok").arg(portInfo));
         ui->statusBar->showMessage(text("open_ok").arg(portInfo));
     }
@@ -471,6 +474,7 @@ void MainWindow::on_pushButton_close_clicked()
     ui->comboBox_serialPort->setEnabled(true);
     setFileTransferUi(false);
     setConnectionState(false);
+    stopModemMonitoring();
     ui->statusBar->showMessage(text("no_connection"));
     ui->checkBox_repeat->setChecked(false);
     repeatSend = false;
@@ -508,6 +512,8 @@ void MainWindow::on_comboBox_checkdigit_currentIndexChanged(int index)
 void MainWindow::on_comboBox_flowctrl_currentIndexChanged(int index)
 {
     setFlowControl(index);
+    if (modemCard)
+        updateModemControls();
 }
 
 void MainWindow::on_comboBox_databits_currentIndexChanged(int index)
@@ -705,6 +711,7 @@ void MainWindow::configureLayout()
     ui->pushButton_clear->setMinimumWidth(88);
     moveSendAreaBelowTabs();
     configureTimelineTab();
+    configureModemCard();
     updateLayoutMetrics();
 }
 
@@ -728,6 +735,8 @@ void MainWindow::updateLayoutMetrics()
     ui->verticalLayout_5->setContentsMargins(18, topMargin, 18, bottomMargin);
     ui->horizontalLayout_13->setContentsMargins(18, topMargin, 18, bottomMargin);
     ui->horizontalLayout_12->setContentsMargins(18, topMargin, 18, bottomMargin);
+    modemCard->layout()->setContentsMargins(18, topMargin, 18, bottomMargin);
+    modemCard->layout()->setSpacing(compactSidebar ? 7 : 10);
     ui->verticalLayout_5->setSpacing(compactSidebar ? 8 : 12);
     ui->verticalLayout_2->setSpacing(compactSidebar ? 6 : 8);
     ui->verticalLayout_4->setSpacing(compactSidebar ? 7 : 10);
@@ -737,7 +746,8 @@ void MainWindow::updateLayoutMetrics()
     // them before measuring: otherwise a previous language (for example
     // Spanish) can leave its wider cached minimum behind after switching to
     // Chinese, or vice versa.
-    for (QWidget *panel : {ui->groupBox, ui->groupBox_2, ui->groupBox_3}) {
+    for (QWidget *panel : {static_cast<QWidget *>(ui->groupBox), static_cast<QWidget *>(modemCard),
+                           static_cast<QWidget *>(ui->groupBox_2), static_cast<QWidget *>(ui->groupBox_3)}) {
         if (panel->layout()) {
             panel->layout()->invalidate();
             panel->layout()->activate();
@@ -751,12 +761,14 @@ void MainWindow::updateLayoutMetrics()
                               ui->comboBox_databits, ui->comboBox_stopbits,
                               ui->comboBox_checkdigit, ui->comboBox_flowctrl,
                               ui->comboBox_receiveEncoding, ui->comboBox_sendEncoding,
-                              ui->comboBox_lineEnding}) {
+                              ui->comboBox_lineEnding, modemPulseLine}) {
         field->setMinimumHeight(fieldHeight);
         field->setMaximumHeight(QWIDGETSIZE_MAX);
     }
-    ui->spinBox_repeat->setMinimumHeight(fieldHeight);
-    ui->spinBox_repeat->setMaximumHeight(QWIDGETSIZE_MAX);
+    for (QSpinBox *spinBox : {ui->spinBox_repeat, modemPulseDuration}) {
+        spinBox->setMinimumHeight(fieldHeight);
+        spinBox->setMaximumHeight(QWIDGETSIZE_MAX);
+    }
 
     for (QWidget *field : {static_cast<QWidget *>(timelineSearch),
                            static_cast<QWidget *>(timelineContentMode)}) {
@@ -768,7 +780,8 @@ void MainWindow::updateLayoutMetrics()
                                 ui->pushButton_open, ui->pushButton_close,
                                 ui->pushButton_send, ui->pushButton_clear,
                                 timelineOpenButton, timelineCsvButton,
-                                timelineJsonButton, timelineClearButton}) {
+                                timelineJsonButton, timelineClearButton,
+                                modemDtrButton, modemRtsButton, modemPulseButton}) {
         button->setMinimumHeight(buttonHeight);
         button->setMaximumHeight(QWIDGETSIZE_MAX);
     }
@@ -802,7 +815,8 @@ void MainWindow::updateLayoutMetrics()
     // Receive/Transmit controls (notably Spanish) can require more room.
     // Size the sidebar from every card's real minimum, so the scroll view
     // never clips its right half under the terminal area.
-    for (QWidget *panel : {ui->groupBox, ui->groupBox_2, ui->groupBox_3}) {
+    for (QWidget *panel : {static_cast<QWidget *>(ui->groupBox), static_cast<QWidget *>(modemCard),
+                           static_cast<QWidget *>(ui->groupBox_2), static_cast<QWidget *>(ui->groupBox_3)}) {
         if (panel->layout())
             desiredWidth = qMax(desiredWidth, panel->layout()->minimumSize().width());
     }
@@ -1121,6 +1135,16 @@ void MainWindow::applyLanguage(UiLanguage language)
     themeSelector->setItemText(1, text("theme_light"));
     themeSelector->setItemText(2, text("theme_dark"));
     transmitTitle->setText(text("transmit"));
+    modemTitle->setText(text("modem_lines"));
+    modemDtrButton->setToolTip(text("modem_dtr_tip"));
+    const char *inputTips[] = {"modem_cts_tip", "modem_dsr_tip", "modem_cd_tip", "modem_ri_tip"};
+    for (int i = 0; i < modemInputIndicators.size(); ++i)
+        modemInputIndicators.at(i)->setToolTip(text(inputTips[i]));
+    modemPulseButton->setText(text("reset_pulse"));
+    modemPulseButton->setToolTip(text("modem_pulse_tip"));
+    modemPulseLine->setToolTip(text("modem_pulse_tip"));
+    modemPulseDuration->setToolTip(text("modem_pulse_tip"));
+    updateModemControls();
     ui->radioButton_send_ascii->setText(text("text_mode"));
     ui->radioButton_send_hex->setText(text("hex_mode"));
     ui->label_sendEncoding->setText(text("text_encoding"));
@@ -1384,6 +1408,12 @@ void MainWindow::initQssStyleSheet()
         QLabel#rxActivityIndicator[active="true"], QLabel#txActivityIndicator[active="true"] {
             color: #dc430b;
         }
+        QLabel[modemLed="true"] { color: #b8c7cd; font-weight: 600; padding: 4px 0; }
+        QLabel[modemLed="true"][lineState="off"] { color: #61757f; }
+        QLabel[modemLed="true"][lineState="on"] { color: #147d5b; }
+        QPushButton[modemToggle="true"] { font-weight: 600; color: #61757f; }
+        QPushButton[modemToggle="true"]:checked { background: #e6f5ef; border-color: #147d5b; color: #147d5b; }
+        QPushButton[modemToggle="true"]:disabled { background: #f6f8fa; color: #9aadb5; border-color: #dbe4e8; }
         QFrame#line { border: 0; background: #dbe4e8; min-height: 1px; max-height: 1px; }
         QFrame#line_2 { border: 0; background: #dbe4e8; min-width: 1px; max-width: 1px; }
         QLineEdit#timelineSearch {
@@ -1622,6 +1652,12 @@ void MainWindow::initQssStyleSheet()
         QLabel#label_8, QLabel#label_9, QLabel#connectionIndicator { color: #c9d5db; }
         QLabel#rxActivityIndicator, QLabel#txActivityIndicator { color: #667983; font-weight: 600; padding: 3px 4px; }
         QLabel#rxActivityIndicator[active="true"], QLabel#txActivityIndicator[active="true"] { color: #ff713d; }
+        QLabel[modemLed="true"] { color: #4a5c66; }
+        QLabel[modemLed="true"][lineState="off"] { color: #9babb4; }
+        QLabel[modemLed="true"][lineState="on"] { color: #4fc49a; }
+        QPushButton[modemToggle="true"] { color: #9babb4; }
+        QPushButton[modemToggle="true"]:checked { background: #173a2e; border-color: #4fc49a; color: #4fc49a; }
+        QPushButton[modemToggle="true"]:disabled { background: #172027; color: #657680; border-color: #293841; }
         QFrame#line { background: #30404a; }
         QFrame#line_2 { background: #30404a; }
         QFileDialog QToolButton { color: #dce5e9; background: transparent; }
@@ -2296,7 +2332,7 @@ void MainWindow::onSerialBytesWritten(qint64 bytes)
 
 void MainWindow::onSerialError(QSerialPort::SerialPortError error)
 {
-    if (error == QSerialPort::NoError || !serial->isOpen())
+    if (error == QSerialPort::NoError || !serial->isOpen() || modemCallInProgress)
         return;
 
     const QString message = text("serial_error").arg(serialErrorText(error));
@@ -2837,4 +2873,231 @@ void MainWindow::clearTimeline()
     timelineIdleTimer->stop();
     timelineModel->clear();
     updateTimelineSummary();
+}
+
+void MainWindow::configureModemCard()
+{
+    modemCard = new QGroupBox(sidebarContent);
+    modemCard->setObjectName(QStringLiteral("modemLinesCard"));
+    modemCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
+    auto *layout = new QVBoxLayout(modemCard);
+    layout->setContentsMargins(18, 16, 18, 18);
+    layout->setSpacing(10);
+    modemTitle = new QLabel(modemCard);
+    modemTitle->setObjectName(QStringLiteral("sectionTitle"));
+    layout->addWidget(modemTitle);
+
+    // DTR and RTS are outputs: each button shows the line's state and switches it.
+    auto makeToggle = [this](ModemLine line) {
+        auto *button = new QPushButton(QString::fromUtf8("● ") + modemLineName(line), modemCard);
+        button->setCheckable(true);
+        button->setProperty("modemToggle", true);
+        connect(button, &QPushButton::clicked, this, [this, line, button](bool active) {
+            if (!setModemOutput(line, active, true)) {
+                const QSignalBlocker blocker(button);
+                button->setChecked(!active);
+            }
+        });
+        return button;
+    };
+    modemDtrButton = makeToggle(ModemLine::Dtr);
+    modemRtsButton = makeToggle(ModemLine::Rts);
+    auto *outputs = new QHBoxLayout();
+    outputs->setSpacing(8);
+    outputs->addWidget(modemDtrButton, 1);
+    outputs->addWidget(modemRtsButton, 1);
+    layout->addLayout(outputs);
+
+    auto *inputs = new QHBoxLayout();
+    inputs->setSpacing(6);
+    for (ModemLine line : modemInputLines()) {
+        auto *indicator = new QLabel(QString::fromUtf8("● ") + modemLineName(line), modemCard);
+        indicator->setProperty("modemLed", true);
+        indicator->setAlignment(Qt::AlignCenter);
+        modemInputIndicators.append(indicator);
+        inputs->addWidget(indicator, 1);
+    }
+    layout->addLayout(inputs);
+
+    modemPulseLine = new QComboBox(modemCard);
+    modemPulseLine->addItem(modemLineName(ModemLine::Dtr), static_cast<int>(ModemLine::Dtr));
+    modemPulseLine->addItem(modemLineName(ModemLine::Rts), static_cast<int>(ModemLine::Rts));
+    modemPulseDuration = new QSpinBox(modemCard);
+    modemPulseDuration->setRange(10, 5000);
+    modemPulseDuration->setSingleStep(50);
+    modemPulseDuration->setSuffix(QStringLiteral(" ms"));
+    modemPulseButton = new QPushButton(modemCard);
+    auto *pulse = new QHBoxLayout();
+    pulse->setSpacing(8);
+    pulse->addWidget(modemPulseLine);
+    pulse->addWidget(modemPulseDuration);
+    pulse->addWidget(modemPulseButton, 1);
+    layout->addLayout(pulse);
+
+    const QSettings settings(QStringLiteral("MULTIBEANS"), QStringLiteral("TinySerial"));
+    modemPulseLine->setCurrentIndex(qBound(0, settings.value(QStringLiteral("modem/pulseLine"), 0).toInt(), 1));
+    modemPulseDuration->setValue(settings.value(QStringLiteral("modem/pulseMs"), DEFAULT_RESET_PULSE_MS).toInt());
+    connect(modemPulseLine, QOverload<int>::of(&QComboBox::currentIndexChanged), this, [this](int index) {
+        QSettings(QStringLiteral("MULTIBEANS"), QStringLiteral("TinySerial"))
+            .setValue(QStringLiteral("modem/pulseLine"), index);
+        updateModemControls();
+    });
+    connect(modemPulseDuration, QOverload<int>::of(&QSpinBox::valueChanged), this, [](int value) {
+        QSettings(QStringLiteral("MULTIBEANS"), QStringLiteral("TinySerial"))
+            .setValue(QStringLiteral("modem/pulseMs"), value);
+    });
+    connect(modemPulseButton, &QPushButton::clicked, this, &MainWindow::startResetPulse);
+
+    ui->verticalLayout_6->insertWidget(ui->verticalLayout_6->indexOf(ui->groupBox) + 1, modemCard);
+
+    modemPollTimer = new QTimer(this);
+    modemPollTimer->setInterval(MODEM_POLL_INTERVAL_MS);
+    connect(modemPollTimer, &QTimer::timeout, this, &MainWindow::pollModemLines);
+    modemPulseTimer = new QTimer(this);
+    modemPulseTimer->setSingleShot(true);
+    connect(modemPulseTimer, &QTimer::timeout, this, &MainWindow::finishResetPulse);
+    stopModemMonitoring();
+}
+
+void MainWindow::updateModemControls()
+{
+    const bool open = serial->isOpen();
+    const bool pulsing = modemPulseTimer->isActive();
+    // With hardware flow control the driver owns RTS and refuses changes to it.
+    const bool rtsFree = serial->flowControl() != QSerialPort::HardwareControl;
+    const bool pulseOnRts = modemPulseLine->currentData().toInt() == static_cast<int>(ModemLine::Rts);
+
+    modemDtrButton->setEnabled(open && !pulsing);
+    modemRtsButton->setEnabled(open && !pulsing && rtsFree);
+    modemRtsButton->setToolTip(text(rtsFree ? "modem_rts_tip" : "modem_rts_flow_tip"));
+    modemPulseLine->setEnabled(!pulsing);
+    modemPulseDuration->setEnabled(!pulsing);
+    modemPulseButton->setEnabled(open && !pulsing && (rtsFree || !pulseOnRts));
+}
+
+void MainWindow::startModemMonitoring()
+{
+    modemSignalsKnown = false;
+    modemSignalsSupported = true;
+    pollModemLines();
+    if (modemSignalsSupported)
+        modemPollTimer->start();
+    updateModemControls();
+}
+
+void MainWindow::stopModemMonitoring()
+{
+    modemPollTimer->stop();
+    modemPulseTimer->stop();
+    modemSignalsKnown = false;
+    for (QPushButton *button : {modemDtrButton, modemRtsButton}) {
+        const QSignalBlocker blocker(button);
+        button->setChecked(false);
+    }
+    for (QLabel *indicator : modemInputIndicators)
+        setModemIndicator(indicator, "unknown");
+    updateModemControls();
+}
+
+void MainWindow::setModemIndicator(QWidget *indicator, const char *state)
+{
+    if (indicator->property("lineState").toString() == QLatin1String(state))
+        return;
+    indicator->setProperty("lineState", QString::fromLatin1(state));
+    indicator->style()->unpolish(indicator);
+    indicator->style()->polish(indicator);
+}
+
+void MainWindow::pollModemLines()
+{
+    if (!serial->isOpen() || !modemSignalsSupported)
+        return;
+
+    modemCallInProgress = true;
+    const QSerialPort::PinoutSignals current = serial->pinoutSignals();
+    const QSerialPort::SerialPortError error = serial->error();
+    modemCallInProgress = false;
+    if (error != QSerialPort::NoError) {
+        // Virtual and some USB ports cannot report the lines; stop asking.
+        serial->clearError();
+        modemSignalsSupported = false;
+        modemPollTimer->stop();
+        for (QLabel *indicator : modemInputIndicators) {
+            setModemIndicator(indicator, "unknown");
+            indicator->setToolTip(text("modem_unsupported"));
+        }
+        recordSystemEvent(text("modem_unsupported"));
+        ui->statusBar->showMessage(text("modem_unsupported"), 5000);
+        return;
+    }
+
+    if (modemSignalsKnown) {
+        for (const ModemLineChange &change : modemLineChanges(modemSignals, current, modemInputLines()))
+            recordSystemEvent(text(change.active ? "ev_line_on" : "ev_line_off").arg(modemLineName(change.line)));
+    }
+    modemSignals = current;
+    modemSignalsKnown = true;
+
+    const QVector<ModemLine> inputs = modemInputLines();
+    for (int i = 0; i < inputs.size(); ++i)
+        setModemIndicator(modemInputIndicators.at(i), modemLineActive(current, inputs.at(i)) ? "on" : "off");
+    for (const auto &[button, line] : {std::pair<QPushButton *, ModemLine>(modemDtrButton, ModemLine::Dtr),
+                                       std::pair<QPushButton *, ModemLine>(modemRtsButton, ModemLine::Rts)}) {
+        const QSignalBlocker blocker(button);
+        button->setChecked(modemLineActive(current, line));
+    }
+}
+
+bool MainWindow::setModemOutput(ModemLine line, bool active, bool record)
+{
+    if (!serial->isOpen())
+        return false;
+
+    modemCallInProgress = true;
+    const bool changed = line == ModemLine::Dtr ? serial->setDataTerminalReady(active)
+                                                : serial->setRequestToSend(active);
+    const QSerialPort::SerialPortError error = serial->error();
+    modemCallInProgress = false;
+    if (!changed) {
+        serial->clearError();
+        const QString message = text("modem_set_failed").arg(modemLineName(line), serialErrorText(error));
+        recordSystemEvent(message);
+        ui->statusBar->showMessage(message, 5000);
+        return false;
+    }
+
+    if (record)
+        recordSystemEvent(text(active ? "ev_line_on" : "ev_line_off").arg(modemLineName(line)));
+    QPushButton *button = line == ModemLine::Dtr ? modemDtrButton : modemRtsButton;
+    {
+        const QSignalBlocker blocker(button);
+        button->setChecked(active);
+    }
+    pollModemLines();
+    return true;
+}
+
+void MainWindow::startResetPulse()
+{
+    if (!serial->isOpen() || modemPulseTimer->isActive())
+        return;
+
+    // Flip the line for the pulse and put it back afterwards.  That gives a
+    // reset edge both for DTR-coupled boards (Arduino) and for RTS-to-EN
+    // auto-reset circuits (ESP32), whatever state the line started in.
+    pulseLine = static_cast<ModemLine>(modemPulseLine->currentData().toInt());
+    pulseRestoreActive = (pulseLine == ModemLine::Dtr ? modemDtrButton : modemRtsButton)->isChecked();
+    if (!setModemOutput(pulseLine, !pulseRestoreActive, false))
+        return;
+
+    recordSystemEvent(text("ev_reset_pulse").arg(modemLineName(pulseLine)).arg(modemPulseDuration->value()));
+    modemPulseTimer->start(modemPulseDuration->value());
+    updateModemControls();
+}
+
+void MainWindow::finishResetPulse()
+{
+    if (serial->isOpen())
+        setModemOutput(pulseLine, pulseRestoreActive, false);
+    updateModemControls();
 }

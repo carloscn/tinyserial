@@ -29,6 +29,7 @@
 #include <QValidator>
 #include "aboutdialog.h"
 #include "displaybuffer.h"
+#include "modemlines.h"
 #include "timeline.h"
 #include "uilanguage.h"
 #include "xmodemtransfer.h"
@@ -42,6 +43,8 @@ class TerminalHighlighter;
 class QComboBox;
 class QFile;
 class QGridLayout;
+class QGroupBox;
+class QSpinBox;
 class QEvent;
 class QResizeEvent;
 class QCheckBox;
@@ -141,6 +144,9 @@ private slots:
     void onSerialBytesWritten(qint64 bytes);
     void onSerialError(QSerialPort::SerialPortError error);
     void flushTimelineLine();
+    void pollModemLines();
+    void startResetPulse();
+    void finishResetPulse();
     void flushTimelineEvents();
     void exportTimelineCsv();
     void exportTimelineJsonLines();
@@ -159,6 +165,9 @@ private:
     // Received bytes with no newline become one event after this much silence.
     static constexpr int TIMELINE_IDLE_GAP_MS = 20;
     static constexpr int TIMELINE_FLUSH_INTERVAL_MS = 100;
+    // QSerialPort has no change notification for the control lines.
+    static constexpr int MODEM_POLL_INTERVAL_MS = 100;
+    static constexpr int DEFAULT_RESET_PULSE_MS = 100;
     Ui::SerialPort *ui;
     AboutDialog *aboutDialog;
     QTimer *repeatSendTimer;
@@ -231,6 +240,25 @@ private:
     UiThemeMode themeMode;
     bool darkMode;
     bool layoutUpdatePending;
+
+    QGroupBox *modemCard = nullptr;
+    QLabel *modemTitle = nullptr;
+    QPushButton *modemDtrButton = nullptr;
+    QPushButton *modemRtsButton = nullptr;
+    QVector<QLabel *> modemInputIndicators;
+    QComboBox *modemPulseLine = nullptr;
+    QSpinBox *modemPulseDuration = nullptr;
+    QPushButton *modemPulseButton = nullptr;
+    QTimer *modemPollTimer = nullptr;
+    QTimer *modemPulseTimer = nullptr;
+    QSerialPort::PinoutSignals modemSignals = QSerialPort::NoSignal;
+    bool modemSignalsKnown = false;
+    bool modemSignalsSupported = true;
+    // Set while TinySerial itself queries or drives a control line, so
+    // onSerialError leaves the reporting of that failure to the caller.
+    bool modemCallInProgress = false;
+    ModemLine pulseLine = ModemLine::Dtr;
+    bool pulseRestoreActive = false;
     bool fullTerminalMode;
 
     void RefreshTheUSBList();
@@ -287,6 +315,12 @@ private:
     void setTerminalMode(bool fullScreen);
     bool sendTerminalKey(int key, const QString &text);
     void syncFullTerminalControls();
+    void configureModemCard();
+    void updateModemControls();
+    void startModemMonitoring();
+    void stopModemMonitoring();
+    void setModemIndicator(QWidget *indicator, const char *state);
+    bool setModemOutput(ModemLine line, bool active, bool record);
     void flashActivity(QLabel *indicator, QTimer *timer);
 
     quint64 recCount;

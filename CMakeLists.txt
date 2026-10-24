@@ -26,6 +26,8 @@ set(TINYSERIAL_SOURCES
     mainwindow.h
     aboutdialog.cpp
     aboutdialog.h
+    modemlines.cpp
+    modemlines.h
     displaybuffer.cpp
     displaybuffer.h
     serialcodec.cpp
@@ -115,6 +117,12 @@ if(BUILD_TESTING)
     # The model uses QFont, so the test needs a GUI platform; CI has no display.
     set_tests_properties(timeline PROPERTIES ENVIRONMENT "QT_QPA_PLATFORM=offscreen")
 
+    add_executable(tst_modemlines tests/tst_modemlines.cpp modemlines.cpp modemlines.h)
+    target_include_directories(tst_modemlines PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+    target_link_libraries(tst_modemlines PRIVATE
+        Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::SerialPort Qt${QT_VERSION_MAJOR}::Test)
+    add_test(NAME modemlines COMMAND tst_modemlines)
+
     add_executable(tst_displaybuffer tests/tst_displaybuffer.cpp displaybuffer.cpp displaybuffer.h)
     target_include_directories(tst_displaybuffer PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
     target_link_libraries(tst_displaybuffer PRIVATE Qt${QT_VERSION_MAJOR}::Core Qt${QT_VERSION_MAJOR}::Test)
@@ -132,6 +140,7 @@ if(BUILD_TESTING)
         textcodec.cpp textcodec.h
         xmodemtransfer.cpp xmodemtransfer.h
         timeline.cpp timeline.h
+        modemlines.cpp modemlines.h
         uilanguage.cpp uilanguage.h
         serialport.ui aboutdialog.ui resource/resource.qrc
     )

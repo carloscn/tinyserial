@@ -186,7 +186,22 @@ const Translation translations[] = {
     {"ev_connected", "Connected to %1 (%2)", "已连接 %1（%2）", "Conectado a %1 (%2)"},
     {"ev_disconnected", "Disconnected from %1", "已断开 %1", "Desconectado de %1"},
     {"ev_paused", "Terminal display paused", "终端显示已暂停", "Visualización del terminal en pausa"},
-    {"ev_resumed", "Terminal display resumed", "终端显示已恢复", "Visualización del terminal reanudada"}
+    {"ev_resumed", "Terminal display resumed", "终端显示已恢复", "Visualización del terminal reanudada"},
+    {"modem_lines", "Control lines", "控制线", "Líneas de control"},
+    {"reset_pulse", "Reset pulse", "脉冲复位", "Pulso de reinicio"},
+    {"modem_dtr_tip", "DTR (Data Terminal Ready), an output. Click to switch it on or off.", "DTR（数据终端就绪），输出线。点击切换有效或无效。", "DTR (terminal de datos listo), salida. Haga clic para activarla o desactivarla."},
+    {"modem_rts_tip", "RTS (Request To Send), an output. Click to switch it on or off.", "RTS（请求发送），输出线。点击切换有效或无效。", "RTS (petición de envío), salida. Haga clic para activarla o desactivarla."},
+    {"modem_rts_flow_tip", "Hardware flow control is driving RTS.", "硬件流控正在控制 RTS。", "El control de flujo por hardware controla RTS."},
+    {"modem_cts_tip", "CTS (Clear To Send), an input from the device.", "CTS（允许发送），来自设备的输入线。", "CTS (listo para enviar), entrada del dispositivo."},
+    {"modem_dsr_tip", "DSR (Data Set Ready), an input from the device.", "DSR（数据设备就绪），来自设备的输入线。", "DSR (equipo de datos listo), entrada del dispositivo."},
+    {"modem_cd_tip", "CD (Carrier Detect), an input from the device.", "CD（载波检测），来自设备的输入线。", "CD (detección de portadora), entrada del dispositivo."},
+    {"modem_ri_tip", "RI (Ring Indicator), an input from the device.", "RI（振铃指示），来自设备的输入线。", "RI (indicador de llamada), entrada del dispositivo."},
+    {"modem_pulse_tip", "Flips the chosen line for the set time, then restores it. Arduino-style boards usually reset on DTR, ESP32-style auto-reset circuits on RTS.", "把所选控制线翻转设定的时长后再恢复。Arduino 类开发板一般用 DTR 复位，ESP32 类自动复位电路一般用 RTS。", "Invierte la línea elegida durante el tiempo indicado y luego la restaura. Las placas tipo Arduino suelen reiniciarse con DTR y los circuitos tipo ESP32 con RTS."},
+    {"modem_unsupported", "This port does not report control line states.", "该串口不支持读取控制线状态。", "Este puerto no informa del estado de las líneas de control."},
+    {"modem_set_failed", "Could not change %1: %2", "无法切换 %1：%2", "No se pudo cambiar %1: %2"},
+    {"ev_line_on", "%1 on", "%1 有效", "%1 activa"},
+    {"ev_line_off", "%1 off", "%1 无效", "%1 inactiva"},
+    {"ev_reset_pulse", "Reset pulse: %1 flipped for %2 ms", "复位脉冲：%1 翻转 %2 ms", "Pulso de reinicio: %1 invertida durante %2 ms"}
 };
 }
 

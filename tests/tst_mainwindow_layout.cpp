@@ -5,6 +5,7 @@
 #include <QComboBox>
 #include <QAction>
 #include <QLabel>
+#include <QPushButton>
 #include <QGroupBox>
 #include <QScrollArea>
 #include <QScrollBar>
@@ -17,6 +18,7 @@ private slots:
     void chineseLayoutAtLargeScaleDoesNotOverlap();
     void spanishSidebarDoesNotClipCards();
     void sidebarWidthFollowsLanguageWithoutResize();
+    void controlLinesAreIdleWhileDisconnected();
 };
 
 void MainWindowLayoutTest::chineseLayoutAtLargeScaleDoesNotOverlap()
@@ -96,7 +98,8 @@ void MainWindowLayoutTest::spanishSidebarDoesNotClipCards()
              QStringLiteral("Codificación"));
 
     for (QWidget *card : {static_cast<QWidget *>(connection), static_cast<QWidget *>(receive),
-                          static_cast<QWidget *>(window.findChild<QGroupBox *>(QStringLiteral("groupBox_3")))}) {
+                          static_cast<QWidget *>(window.findChild<QGroupBox *>(QStringLiteral("groupBox_3"))),
+                          static_cast<QWidget *>(window.findChild<QGroupBox *>(QStringLiteral("modemLinesCard")))}) {
         QVERIFY(card);
         const QRect cardRect(card->mapTo(sidebar->viewport(), QPoint()), card->size());
         QVERIFY2(cardRect.right() <= sidebar->viewport()->rect().right(),
@@ -130,6 +133,30 @@ void MainWindowLayoutTest::sidebarWidthFollowsLanguageWithoutResize()
 
     language->setCurrentIndex(chinese);
     QTRY_VERIFY(sidebar->widget()->width() < spanishWidth);
+}
+
+void MainWindowLayoutTest::controlLinesAreIdleWhileDisconnected()
+{
+    MainWindow window;
+    window.show();
+
+    QGroupBox *card = window.findChild<QGroupBox *>(QStringLiteral("modemLinesCard"));
+    QVERIFY(card);
+    const QList<QPushButton *> buttons = card->findChildren<QPushButton *>();
+    QCOMPARE(buttons.size(), 3);
+    for (QPushButton *button : buttons) {
+        QVERIFY2(!button->isEnabled(), qPrintable(button->text() + QStringLiteral(" is usable without a port")));
+        QVERIFY(!button->isChecked());
+    }
+
+    int indicators = 0;
+    for (QLabel *label : card->findChildren<QLabel *>()) {
+        if (!label->property("modemLed").toBool())
+            continue;
+        ++indicators;
+        QCOMPARE(label->property("lineState").toString(), QStringLiteral("unknown"));
+    }
+    QCOMPARE(indicators, 4);
 }
 
 QTEST_MAIN(MainWindowLayoutTest)

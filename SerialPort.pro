@@ -35,6 +35,7 @@ SOURCES += main.cpp\
     textcodec.cpp \
     xmodemtransfer.cpp \
     timeline.cpp \
+    modemlines.cpp \
     uilanguage.cpp
 
 HEADERS  += \
@@ -49,6 +50,7 @@ HEADERS  += \
     textcodec.h \
     xmodemtransfer.h \
     timeline.h \
+    modemlines.h \
     uilanguage.h
 
 FORMS    += serialport.ui \
