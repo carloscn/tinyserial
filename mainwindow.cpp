@@ -23,12 +23,12 @@
 #include <QComboBox>
 #include <QFontDatabase>
 #include <QFontMetrics>
+#include <QFrame>
 #include <QFile>
 #include <QFileDialog>
 #include <QFileInfo>
 #include <QFormLayout>
 #include <QGridLayout>
-#include <QGroupBox>
 #include <QGuiApplication>
 #include <QHBoxLayout>
 #include <QHeaderView>
@@ -197,12 +197,24 @@ MainWindow::MainWindow(QWidget *parent) :
             this, [this](Qt::ColorScheme) { refreshThemeFromPreference(); });
 #endif
 
+    connectionIndicator->setObjectName(QStringLiteral("connectionIndicator"));
     rxActivityIndicator->setObjectName(QStringLiteral("rxActivityIndicator"));
     txActivityIndicator->setObjectName(QStringLiteral("txActivityIndicator"));
     rxActivityIndicator->setText(QStringLiteral("● RX"));
     txActivityIndicator->setText(QStringLiteral("● TX"));
     rxActivityIndicator->setProperty("active", false);
     txActivityIndicator->setProperty("active", false);
+    // Status bar, left to right: CTS DSR CD RI | RX TX | connection.
+    auto addStatusSeparator = [this] {
+        auto *separator = new QFrame(ui->statusBar);
+        separator->setFrameShape(QFrame::VLine);
+        separator->setFrameShadow(QFrame::Plain);
+        separator->setFixedHeight(fontMetrics().height());
+        ui->statusBar->addPermanentWidget(separator);
+    };
+    for (QLabel *indicator : modemInputIndicators)
+        ui->statusBar->addPermanentWidget(indicator);
+    addStatusSeparator();
     for (const auto &[indicator, timer] : { std::pair<QLabel *, QTimer *>(rxActivityIndicator, rxActivityTimer),
                                             std::pair<QLabel *, QTimer *>(txActivityIndicator, txActivityTimer) }) {
         timer->setSingleShot(true);
@@ -213,6 +225,7 @@ MainWindow::MainWindow(QWidget *parent) :
         });
         ui->statusBar->addPermanentWidget(indicator);
     }
+    addStatusSeparator();
     ui->statusBar->addPermanentWidget(connectionIndicator);
 
     // Send/Receive ASCII Format initialization
@@ -512,7 +525,7 @@ void MainWindow::on_comboBox_checkdigit_currentIndexChanged(int index)
 void MainWindow::on_comboBox_flowctrl_currentIndexChanged(int index)
 {
     setFlowControl(index);
-    if (modemCard)
+    if (modemControls)
         updateModemControls();
 }
 
@@ -711,7 +724,7 @@ void MainWindow::configureLayout()
     ui->pushButton_clear->setMinimumWidth(88);
     moveSendAreaBelowTabs();
     configureTimelineTab();
-    configureModemCard();
+    configureModemControls();
     updateLayoutMetrics();
 }
 
@@ -735,8 +748,7 @@ void MainWindow::updateLayoutMetrics()
     ui->verticalLayout_5->setContentsMargins(18, topMargin, 18, bottomMargin);
     ui->horizontalLayout_13->setContentsMargins(18, topMargin, 18, bottomMargin);
     ui->horizontalLayout_12->setContentsMargins(18, topMargin, 18, bottomMargin);
-    modemCard->layout()->setContentsMargins(18, topMargin, 18, bottomMargin);
-    modemCard->layout()->setSpacing(compactSidebar ? 7 : 10);
+    modemControls->layout()->setSpacing(compactSidebar ? 6 : 8);
     ui->verticalLayout_5->setSpacing(compactSidebar ? 8 : 12);
     ui->verticalLayout_2->setSpacing(compactSidebar ? 6 : 8);
     ui->verticalLayout_4->setSpacing(compactSidebar ? 7 : 10);
@@ -746,8 +758,7 @@ void MainWindow::updateLayoutMetrics()
     // them before measuring: otherwise a previous language (for example
     // Spanish) can leave its wider cached minimum behind after switching to
     // Chinese, or vice versa.
-    for (QWidget *panel : {static_cast<QWidget *>(ui->groupBox), static_cast<QWidget *>(modemCard),
-                           static_cast<QWidget *>(ui->groupBox_2), static_cast<QWidget *>(ui->groupBox_3)}) {
+    for (QWidget *panel : {ui->groupBox, ui->groupBox_2, ui->groupBox_3}) {
         if (panel->layout()) {
             panel->layout()->invalidate();
             panel->layout()->activate();
@@ -815,8 +826,7 @@ void MainWindow::updateLayoutMetrics()
     // Receive/Transmit controls (notably Spanish) can require more room.
     // Size the sidebar from every card's real minimum, so the scroll view
     // never clips its right half under the terminal area.
-    for (QWidget *panel : {static_cast<QWidget *>(ui->groupBox), static_cast<QWidget *>(modemCard),
-                           static_cast<QWidget *>(ui->groupBox_2), static_cast<QWidget *>(ui->groupBox_3)}) {
+    for (QWidget *panel : {ui->groupBox, ui->groupBox_2, ui->groupBox_3}) {
         if (panel->layout())
             desiredWidth = qMax(desiredWidth, panel->layout()->minimumSize().width());
     }
@@ -1135,7 +1145,6 @@ void MainWindow::applyLanguage(UiLanguage language)
     themeSelector->setItemText(1, text("theme_light"));
     themeSelector->setItemText(2, text("theme_dark"));
     transmitTitle->setText(text("transmit"));
-    modemTitle->setText(text("modem_lines"));
     modemDtrButton->setToolTip(text("modem_dtr_tip"));
     const char *inputTips[] = {"modem_cts_tip", "modem_dsr_tip", "modem_cd_tip", "modem_ri_tip"};
     for (int i = 0; i < modemInputIndicators.size(); ++i)
@@ -1408,8 +1417,8 @@ void MainWindow::initQssStyleSheet()
         QLabel#rxActivityIndicator[active="true"], QLabel#txActivityIndicator[active="true"] {
             color: #dc430b;
         }
-        QLabel[modemLed="true"] { color: #b8c7cd; font-weight: 600; padding: 4px 0; }
-        QLabel[modemLed="true"][lineState="off"] { color: #61757f; }
+        QLabel[modemLed="true"] { color: #d3dde1; font-weight: 600; padding: 3px 4px; }
+        QLabel[modemLed="true"][lineState="off"] { color: #9aadb5; }
         QLabel[modemLed="true"][lineState="on"] { color: #147d5b; }
         QPushButton[modemToggle="true"] { font-weight: 600; color: #61757f; }
         QPushButton[modemToggle="true"]:checked { background: #e6f5ef; border-color: #147d5b; color: #147d5b; }
@@ -1652,8 +1661,8 @@ void MainWindow::initQssStyleSheet()
         QLabel#label_8, QLabel#label_9, QLabel#connectionIndicator { color: #c9d5db; }
         QLabel#rxActivityIndicator, QLabel#txActivityIndicator { color: #667983; font-weight: 600; padding: 3px 4px; }
         QLabel#rxActivityIndicator[active="true"], QLabel#txActivityIndicator[active="true"] { color: #ff713d; }
-        QLabel[modemLed="true"] { color: #4a5c66; }
-        QLabel[modemLed="true"][lineState="off"] { color: #9babb4; }
+        QLabel[modemLed="true"] { color: #3a4b55; }
+        QLabel[modemLed="true"][lineState="off"] { color: #667983; }
         QLabel[modemLed="true"][lineState="on"] { color: #4fc49a; }
         QPushButton[modemToggle="true"] { color: #9babb4; }
         QPushButton[modemToggle="true"]:checked { background: #173a2e; border-color: #4fc49a; color: #4fc49a; }
@@ -2875,21 +2884,23 @@ void MainWindow::clearTimeline()
     updateTimelineSummary();
 }
 
-void MainWindow::configureModemCard()
+void MainWindow::configureModemControls()
 {
-    modemCard = new QGroupBox(sidebarContent);
-    modemCard->setObjectName(QStringLiteral("modemLinesCard"));
-    modemCard->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Fixed);
-    auto *layout = new QVBoxLayout(modemCard);
-    layout->setContentsMargins(18, 16, 18, 18);
-    layout->setSpacing(10);
-    modemTitle = new QLabel(modemCard);
-    modemTitle->setObjectName(QStringLiteral("sectionTitle"));
-    layout->addWidget(modemTitle);
+    // DTR/RTS switches and the reset pulse sit at the bottom of the
+    // Connection card, below a divider.
+    modemControls = new QWidget(ui->groupBox);
+    modemControls->setObjectName(QStringLiteral("modemControls"));
+    auto *layout = new QVBoxLayout(modemControls);
+    layout->setContentsMargins(0, 2, 0, 0);
+    layout->setSpacing(8);
+    auto *divider = new QFrame(modemControls);
+    divider->setFrameShape(QFrame::HLine);
+    divider->setFrameShadow(QFrame::Plain);
+    layout->addWidget(divider);
 
     // DTR and RTS are outputs: each button shows the line's state and switches it.
     auto makeToggle = [this](ModemLine line) {
-        auto *button = new QPushButton(QString::fromUtf8("● ") + modemLineName(line), modemCard);
+        auto *button = new QPushButton(QString::fromUtf8("● ") + modemLineName(line), modemControls);
         button->setCheckable(true);
         button->setProperty("modemToggle", true);
         connect(button, &QPushButton::clicked, this, [this, line, button](bool active) {
@@ -2908,25 +2919,21 @@ void MainWindow::configureModemCard()
     outputs->addWidget(modemRtsButton, 1);
     layout->addLayout(outputs);
 
-    auto *inputs = new QHBoxLayout();
-    inputs->setSpacing(6);
+    // The input lines are shown in the status bar, next to the RX/TX lights.
     for (ModemLine line : modemInputLines()) {
-        auto *indicator = new QLabel(QString::fromUtf8("● ") + modemLineName(line), modemCard);
+        auto *indicator = new QLabel(QString::fromUtf8("● ") + modemLineName(line), ui->statusBar);
         indicator->setProperty("modemLed", true);
-        indicator->setAlignment(Qt::AlignCenter);
         modemInputIndicators.append(indicator);
-        inputs->addWidget(indicator, 1);
     }
-    layout->addLayout(inputs);
 
-    modemPulseLine = new QComboBox(modemCard);
+    modemPulseLine = new QComboBox(modemControls);
     modemPulseLine->addItem(modemLineName(ModemLine::Dtr), static_cast<int>(ModemLine::Dtr));
     modemPulseLine->addItem(modemLineName(ModemLine::Rts), static_cast<int>(ModemLine::Rts));
-    modemPulseDuration = new QSpinBox(modemCard);
+    modemPulseDuration = new QSpinBox(modemControls);
     modemPulseDuration->setRange(10, 5000);
     modemPulseDuration->setSingleStep(50);
     modemPulseDuration->setSuffix(QStringLiteral(" ms"));
-    modemPulseButton = new QPushButton(modemCard);
+    modemPulseButton = new QPushButton(modemControls);
     auto *pulse = new QHBoxLayout();
     pulse->setSpacing(8);
     pulse->addWidget(modemPulseLine);
@@ -2948,7 +2955,7 @@ void MainWindow::configureModemCard()
     });
     connect(modemPulseButton, &QPushButton::clicked, this, &MainWindow::startResetPulse);
 
-    ui->verticalLayout_6->insertWidget(ui->verticalLayout_6->indexOf(ui->groupBox) + 1, modemCard);
+    ui->verticalLayout_5->addWidget(modemControls);
 
     modemPollTimer = new QTimer(this);
     modemPollTimer->setInterval(MODEM_POLL_INTERVAL_MS);

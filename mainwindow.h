@@ -43,7 +43,6 @@ class TerminalHighlighter;
 class QComboBox;
 class QFile;
 class QGridLayout;
-class QGroupBox;
 class QSpinBox;
 class QEvent;
 class QResizeEvent;
@@ -241,8 +240,7 @@ private:
     bool darkMode;
     bool layoutUpdatePending;
 
-    QGroupBox *modemCard = nullptr;
-    QLabel *modemTitle = nullptr;
+    QWidget *modemControls = nullptr;
     QPushButton *modemDtrButton = nullptr;
     QPushButton *modemRtsButton = nullptr;
     QVector<QLabel *> modemInputIndicators;
@@ -315,7 +313,7 @@ private:
     void setTerminalMode(bool fullScreen);
     bool sendTerminalKey(int key, const QString &text);
     void syncFullTerminalControls();
-    void configureModemCard();
+    void configureModemControls();
     void updateModemControls();
     void startModemMonitoring();
     void stopModemMonitoring();

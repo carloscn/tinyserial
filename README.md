@@ -16,7 +16,7 @@ Website: https://tinyserial.mltz.tech
 - Save the session to a log file, or log to a file continuously while it runs
 - Timeline tab: every received line, send and connection event with millisecond times, the delay before the device answered a send, filters and search, and CSV or JSON Lines export
 - Standard or custom baud rates, data bits, parity, stop bits and flow control
-- Control lines: live DTR, RTS, CTS, DSR, CD and RI lights, DTR and RTS switches, and a reset pulse on DTR or RTS for Arduino- and ESP32-style boards
+- Control lines: CTS, DSR, CD and RI lights in the status bar next to RX/TX, DTR and RTS switches that light up when on, and a reset pulse on DTR or RTS for Arduino- and ESP32-style boards
 - Light and dark themes; English, Chinese and Spanish interface
 - Full terminal mode for keyboard-driven serial work, with the selected port, baud rate, data/stop bits, parity, flow control and logging controls kept visible
 - A fixed dark terminal surface in full terminal mode, with a configurable monospace font, terminal-cache limit, RX/TX activity lights and status-word highlighting

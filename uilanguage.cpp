@@ -12,7 +12,7 @@ struct Translation {
 };
 
 const Translation translations[] = {
-    {"connection", "Connection", "连接", "Conexión"},
+    {"connection", "Connection & control", "连接与控制", "Conexión y control"},
     {"serial_port", "Serial port", "串口", "Puerto serie"},
     {"baud_rate", "Baud rate", "波特率", "Velocidad en baudios"},
     {"data_bits", "Data bits", "数据位", "Bits de datos"},
@@ -187,7 +187,6 @@ const Translation translations[] = {
     {"ev_disconnected", "Disconnected from %1", "已断开 %1", "Desconectado de %1"},
     {"ev_paused", "Terminal display paused", "终端显示已暂停", "Visualización del terminal en pausa"},
     {"ev_resumed", "Terminal display resumed", "终端显示已恢复", "Visualización del terminal reanudada"},
-    {"modem_lines", "Control lines", "控制线", "Líneas de control"},
     {"reset_pulse", "Reset pulse", "脉冲复位", "Pulso de reinicio"},
     {"modem_dtr_tip", "DTR (Data Terminal Ready), an output. Click to switch it on or off.", "DTR（数据终端就绪），输出线。点击切换有效或无效。", "DTR (terminal de datos listo), salida. Haga clic para activarla o desactivarla."},
     {"modem_rts_tip", "RTS (Request To Send), an output. Click to switch it on or off.", "RTS（请求发送），输出线。点击切换有效或无效。", "RTS (petición de envío), salida. Haga clic para activarla o desactivarla."},

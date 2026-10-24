@@ -9,6 +9,7 @@
 #include <QGroupBox>
 #include <QScrollArea>
 #include <QScrollBar>
+#include <QStatusBar>
 
 class MainWindowLayoutTest : public QObject
 {
@@ -98,8 +99,7 @@ void MainWindowLayoutTest::spanishSidebarDoesNotClipCards()
              QStringLiteral("Codificación"));
 
     for (QWidget *card : {static_cast<QWidget *>(connection), static_cast<QWidget *>(receive),
-                          static_cast<QWidget *>(window.findChild<QGroupBox *>(QStringLiteral("groupBox_3"))),
-                          static_cast<QWidget *>(window.findChild<QGroupBox *>(QStringLiteral("modemLinesCard")))}) {
+                          static_cast<QWidget *>(window.findChild<QGroupBox *>(QStringLiteral("groupBox_3")))}) {
         QVERIFY(card);
         const QRect cardRect(card->mapTo(sidebar->viewport(), QPoint()), card->size());
         QVERIFY2(cardRect.right() <= sidebar->viewport()->rect().right(),
@@ -140,23 +140,41 @@ void MainWindowLayoutTest::controlLinesAreIdleWhileDisconnected()
     MainWindow window;
     window.show();
 
-    QGroupBox *card = window.findChild<QGroupBox *>(QStringLiteral("modemLinesCard"));
-    QVERIFY(card);
-    const QList<QPushButton *> buttons = card->findChildren<QPushButton *>();
+    // DTR/RTS and the reset pulse live in the Connection card.
+    QGroupBox *connection = window.findChild<QGroupBox *>(QStringLiteral("groupBox"));
+    QWidget *controls = window.findChild<QWidget *>(QStringLiteral("modemControls"));
+    QVERIFY(connection);
+    QVERIFY(controls);
+    QVERIFY(connection->isAncestorOf(controls));
+    const QList<QPushButton *> buttons = controls->findChildren<QPushButton *>();
     QCOMPARE(buttons.size(), 3);
     for (QPushButton *button : buttons) {
         QVERIFY2(!button->isEnabled(), qPrintable(button->text() + QStringLiteral(" is usable without a port")));
         QVERIFY(!button->isChecked());
     }
 
+    // CTS, DSR, CD and RI sit in the status bar, ahead of the RX/TX lights.
     int indicators = 0;
-    for (QLabel *label : card->findChildren<QLabel *>()) {
+    for (QLabel *label : window.statusBar()->findChildren<QLabel *>()) {
         if (!label->property("modemLed").toBool())
             continue;
         ++indicators;
         QCOMPARE(label->property("lineState").toString(), QStringLiteral("unknown"));
     }
     QCOMPARE(indicators, 4);
+
+    QLabel *ri = nullptr;
+    for (QLabel *label : window.statusBar()->findChildren<QLabel *>()) {
+        if (label->text().endsWith(QStringLiteral("RI")))
+            ri = label;
+    }
+    QLabel *rx = window.findChild<QLabel *>(QStringLiteral("rxActivityIndicator"));
+    QLabel *connectionState = window.findChild<QLabel *>(QStringLiteral("connectionIndicator"));
+    QVERIFY(ri);
+    QVERIFY(rx);
+    QVERIFY(connectionState);
+    QVERIFY2(ri->geometry().right() < rx->geometry().left(), "Line lights must come before RX/TX");
+    QVERIFY2(rx->geometry().right() < connectionState->geometry().left(), "RX/TX must come before the connection state");
 }
 
 QTEST_MAIN(MainWindowLayoutTest)
