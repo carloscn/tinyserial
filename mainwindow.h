@@ -239,10 +239,12 @@ private:
     UiThemeMode themeMode;
     bool darkMode;
     bool layoutUpdatePending;
+    // Window height that shows every sidebar card with the roomy spacing.
+    int roomyWindowHeight = 0;
 
     QWidget *modemControls = nullptr;
-    QPushButton *modemDtrButton = nullptr;
-    QPushButton *modemRtsButton = nullptr;
+    QCheckBox *modemDtrCheck = nullptr;
+    QCheckBox *modemRtsCheck = nullptr;
     QVector<QLabel *> modemInputIndicators;
     QComboBox *modemPulseLine = nullptr;
     QSpinBox *modemPulseDuration = nullptr;
@@ -314,6 +316,8 @@ private:
     bool sendTerminalKey(int key, const QString &text);
     void syncFullTerminalControls();
     void configureModemControls();
+    void fitWindowToContent();
+    int sidebarChromeHeight() const;
     void updateModemControls();
     void startModemMonitoring();
     void stopModemMonitoring();

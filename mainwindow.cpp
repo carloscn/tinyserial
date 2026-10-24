@@ -300,6 +300,7 @@ MainWindow::MainWindow(QWidget *parent) :
     on_checkBox_disptime_clicked(false);
     setFileTransferUi(false);
     syncFullTerminalControls();
+    fitWindowToContent();
 }
 
 MainWindow::~MainWindow()
@@ -736,37 +737,47 @@ void MainWindow::updateLayoutMetrics()
     const int fieldHeight = qMax(30, ui->comboBox_baudrate->sizeHint().height());
     const int buttonHeight = qMax(32, ui->pushButton_open->sizeHint().height());
 
-    // On scaled or short displays, show all three sidebar cards at startup
-    // instead of requiring the user to discover the Transmit card by scrolling.
-    // Widget heights still come from Qt's style/font metrics, so this remains
-    // safe for CJK and accessibility fonts.
-    const bool compactSidebar = height() < 960;
-    const int topMargin = compactSidebar ? 10 : 16;
-    const int bottomMargin = compactSidebar ? 12 : 18;
-    const int cardSpacing = compactSidebar ? 8 : 10;
-    ui->verticalLayout_6->setSpacing(cardSpacing);
-    ui->verticalLayout_5->setContentsMargins(18, topMargin, 18, bottomMargin);
-    ui->horizontalLayout_13->setContentsMargins(18, topMargin, 18, bottomMargin);
-    ui->horizontalLayout_12->setContentsMargins(18, topMargin, 18, bottomMargin);
-    modemControls->layout()->setSpacing(compactSidebar ? 6 : 8);
-    ui->verticalLayout_5->setSpacing(compactSidebar ? 8 : 12);
-    ui->verticalLayout_2->setSpacing(compactSidebar ? 6 : 8);
-    ui->verticalLayout_4->setSpacing(compactSidebar ? 7 : 10);
-    settingsGrid->setVerticalSpacing(compactSidebar ? 4 : 6);
+    // Widget heights still come from Qt's style/font metrics, so either
+    // spacing remains safe for CJK and accessibility fonts.
+    auto applySidebarSpacing = [this](bool compact) {
+        const int topMargin = compact ? 10 : 16;
+        const int bottomMargin = compact ? 12 : 18;
+        ui->verticalLayout_6->setSpacing(compact ? 8 : 10);
+        ui->verticalLayout_5->setContentsMargins(18, topMargin, 18, bottomMargin);
+        ui->horizontalLayout_13->setContentsMargins(18, topMargin, 18, bottomMargin);
+        ui->horizontalLayout_12->setContentsMargins(18, topMargin, 18, bottomMargin);
+        modemControls->layout()->setSpacing(compact ? 6 : 8);
+        ui->verticalLayout_5->setSpacing(compact ? 8 : 12);
+        ui->verticalLayout_2->setSpacing(compact ? 6 : 8);
+        ui->verticalLayout_4->setSpacing(compact ? 7 : 10);
+        settingsGrid->setVerticalSpacing(compact ? 4 : 6);
 
-    // The card layouts cache their minimum size.  Invalidate and activate
-    // them before measuring: otherwise a previous language (for example
-    // Spanish) can leave its wider cached minimum behind after switching to
-    // Chinese, or vice versa.
-    for (QWidget *panel : {ui->groupBox, ui->groupBox_2, ui->groupBox_3}) {
-        if (panel->layout()) {
-            panel->layout()->invalidate();
-            panel->layout()->activate();
+        // The card layouts cache their minimum size.  Invalidate and activate
+        // them before measuring: otherwise a previous language (for example
+        // Spanish) can leave its wider cached minimum behind after switching
+        // to Chinese, or vice versa.  Nested layouts go first, or the cards
+        // measure them with the previous spacing.
+        for (QLayout *nested : {static_cast<QLayout *>(settingsGrid), modemControls->layout()}) {
+            nested->invalidate();
+            nested->activate();
         }
-        panel->updateGeometry();
-    }
-    settingsGrid->invalidate();
-    settingsGrid->activate();
+        for (QWidget *panel : {ui->groupBox, ui->groupBox_2, ui->groupBox_3}) {
+            if (panel->layout()) {
+                panel->layout()->invalidate();
+                panel->layout()->activate();
+            }
+            panel->updateGeometry();
+        }
+        ui->verticalLayout_6->invalidate();
+    };
+
+    // Use the roomy spacing when the window is tall enough to show every card
+    // with it; otherwise tighten it so all cards fit without scrolling where
+    // possible.
+    applySidebarSpacing(false);
+    roomyWindowHeight = sidebarChromeHeight() + ui->verticalLayout_6->sizeHint().height();
+    if (height() < roomyWindowHeight)
+        applySidebarSpacing(true);
 
     for (QComboBox *field : {ui->comboBox_serialPort, ui->comboBox_baudrate,
                               ui->comboBox_databits, ui->comboBox_stopbits,
@@ -792,7 +803,7 @@ void MainWindow::updateLayoutMetrics()
                                 ui->pushButton_send, ui->pushButton_clear,
                                 timelineOpenButton, timelineCsvButton,
                                 timelineJsonButton, timelineClearButton,
-                                modemDtrButton, modemRtsButton, modemPulseButton}) {
+                                modemPulseButton}) {
         button->setMinimumHeight(buttonHeight);
         button->setMaximumHeight(QWIDGETSIZE_MAX);
     }
@@ -802,7 +813,8 @@ void MainWindow::updateLayoutMetrics()
         ui->radioButton_rec_ascii, ui->radioButton_rec_hex, ui->checkBox_wordwrap,
         ui->checkBox_dispsend, ui->checkBox_disptime, ui->checkBox_realtime_log,
         ui->radioButton_send_ascii,
-        ui->radioButton_send_hex, ui->checkBox_escapeSequences, ui->checkBox_repeat
+        ui->radioButton_send_hex, ui->checkBox_escapeSequences, ui->checkBox_repeat,
+        modemDtrCheck, modemRtsCheck
     };
     for (QWidget *option : options)
         option->setMinimumHeight(option->sizeHint().height());
@@ -1145,7 +1157,7 @@ void MainWindow::applyLanguage(UiLanguage language)
     themeSelector->setItemText(1, text("theme_light"));
     themeSelector->setItemText(2, text("theme_dark"));
     transmitTitle->setText(text("transmit"));
-    modemDtrButton->setToolTip(text("modem_dtr_tip"));
+    modemDtrCheck->setToolTip(text("modem_dtr_tip"));
     const char *inputTips[] = {"modem_cts_tip", "modem_dsr_tip", "modem_cd_tip", "modem_ri_tip"};
     for (int i = 0; i < modemInputIndicators.size(); ++i)
         modemInputIndicators.at(i)->setToolTip(text(inputTips[i]));
@@ -1420,9 +1432,6 @@ void MainWindow::initQssStyleSheet()
         QLabel[modemLed="true"] { color: #d3dde1; font-weight: 600; padding: 3px 4px; }
         QLabel[modemLed="true"][lineState="off"] { color: #9aadb5; }
         QLabel[modemLed="true"][lineState="on"] { color: #147d5b; }
-        QPushButton[modemToggle="true"] { font-weight: 600; color: #61757f; }
-        QPushButton[modemToggle="true"]:checked { background: #e6f5ef; border-color: #147d5b; color: #147d5b; }
-        QPushButton[modemToggle="true"]:disabled { background: #f6f8fa; color: #9aadb5; border-color: #dbe4e8; }
         QFrame#line { border: 0; background: #dbe4e8; min-height: 1px; max-height: 1px; }
         QFrame#line_2 { border: 0; background: #dbe4e8; min-width: 1px; max-width: 1px; }
         QLineEdit#timelineSearch {
@@ -1664,9 +1673,6 @@ void MainWindow::initQssStyleSheet()
         QLabel[modemLed="true"] { color: #3a4b55; }
         QLabel[modemLed="true"][lineState="off"] { color: #667983; }
         QLabel[modemLed="true"][lineState="on"] { color: #4fc49a; }
-        QPushButton[modemToggle="true"] { color: #9babb4; }
-        QPushButton[modemToggle="true"]:checked { background: #173a2e; border-color: #4fc49a; color: #4fc49a; }
-        QPushButton[modemToggle="true"]:disabled { background: #172027; color: #657680; border-color: #293841; }
         QFrame#line { background: #30404a; }
         QFrame#line_2 { background: #30404a; }
         QFileDialog QToolButton { color: #dce5e9; background: transparent; }
@@ -2898,25 +2904,24 @@ void MainWindow::configureModemControls()
     divider->setFrameShadow(QFrame::Plain);
     layout->addWidget(divider);
 
-    // DTR and RTS are outputs: each button shows the line's state and switches it.
-    auto makeToggle = [this](ModemLine line) {
-        auto *button = new QPushButton(QString::fromUtf8("● ") + modemLineName(line), modemControls);
-        button->setCheckable(true);
-        button->setProperty("modemToggle", true);
-        connect(button, &QPushButton::clicked, this, [this, line, button](bool active) {
+    // DTR and RTS are outputs: checked means the line is on (asserted).
+    auto makeLineCheck = [this](ModemLine line) {
+        auto *check = new QCheckBox(modemLineName(line), modemControls);
+        connect(check, &QCheckBox::clicked, this, [this, line, check](bool active) {
             if (!setModemOutput(line, active, true)) {
-                const QSignalBlocker blocker(button);
-                button->setChecked(!active);
+                const QSignalBlocker blocker(check);
+                check->setChecked(!active);
             }
         });
-        return button;
+        return check;
     };
-    modemDtrButton = makeToggle(ModemLine::Dtr);
-    modemRtsButton = makeToggle(ModemLine::Rts);
+    modemDtrCheck = makeLineCheck(ModemLine::Dtr);
+    modemRtsCheck = makeLineCheck(ModemLine::Rts);
     auto *outputs = new QHBoxLayout();
-    outputs->setSpacing(8);
-    outputs->addWidget(modemDtrButton, 1);
-    outputs->addWidget(modemRtsButton, 1);
+    outputs->setSpacing(24);
+    outputs->addWidget(modemDtrCheck);
+    outputs->addWidget(modemRtsCheck);
+    outputs->addStretch(1);
     layout->addLayout(outputs);
 
     // The input lines are shown in the status bar, next to the RX/TX lights.
@@ -2974,9 +2979,9 @@ void MainWindow::updateModemControls()
     const bool rtsFree = serial->flowControl() != QSerialPort::HardwareControl;
     const bool pulseOnRts = modemPulseLine->currentData().toInt() == static_cast<int>(ModemLine::Rts);
 
-    modemDtrButton->setEnabled(open && !pulsing);
-    modemRtsButton->setEnabled(open && !pulsing && rtsFree);
-    modemRtsButton->setToolTip(text(rtsFree ? "modem_rts_tip" : "modem_rts_flow_tip"));
+    modemDtrCheck->setEnabled(open && !pulsing);
+    modemRtsCheck->setEnabled(open && !pulsing && rtsFree);
+    modemRtsCheck->setToolTip(text(rtsFree ? "modem_rts_tip" : "modem_rts_flow_tip"));
     modemPulseLine->setEnabled(!pulsing);
     modemPulseDuration->setEnabled(!pulsing);
     modemPulseButton->setEnabled(open && !pulsing && (rtsFree || !pulseOnRts));
@@ -2997,9 +3002,9 @@ void MainWindow::stopModemMonitoring()
     modemPollTimer->stop();
     modemPulseTimer->stop();
     modemSignalsKnown = false;
-    for (QPushButton *button : {modemDtrButton, modemRtsButton}) {
-        const QSignalBlocker blocker(button);
-        button->setChecked(false);
+    for (QCheckBox *check : {modemDtrCheck, modemRtsCheck}) {
+        const QSignalBlocker blocker(check);
+        check->setChecked(false);
     }
     for (QLabel *indicator : modemInputIndicators)
         setModemIndicator(indicator, "unknown");
@@ -3048,10 +3053,10 @@ void MainWindow::pollModemLines()
     const QVector<ModemLine> inputs = modemInputLines();
     for (int i = 0; i < inputs.size(); ++i)
         setModemIndicator(modemInputIndicators.at(i), modemLineActive(current, inputs.at(i)) ? "on" : "off");
-    for (const auto &[button, line] : {std::pair<QPushButton *, ModemLine>(modemDtrButton, ModemLine::Dtr),
-                                       std::pair<QPushButton *, ModemLine>(modemRtsButton, ModemLine::Rts)}) {
-        const QSignalBlocker blocker(button);
-        button->setChecked(modemLineActive(current, line));
+    for (const auto &[check, line] : {std::pair<QCheckBox *, ModemLine>(modemDtrCheck, ModemLine::Dtr),
+                                      std::pair<QCheckBox *, ModemLine>(modemRtsCheck, ModemLine::Rts)}) {
+        const QSignalBlocker blocker(check);
+        check->setChecked(modemLineActive(current, line));
     }
 }
 
@@ -3075,10 +3080,10 @@ bool MainWindow::setModemOutput(ModemLine line, bool active, bool record)
 
     if (record)
         recordSystemEvent(text(active ? "ev_line_on" : "ev_line_off").arg(modemLineName(line)));
-    QPushButton *button = line == ModemLine::Dtr ? modemDtrButton : modemRtsButton;
+    QCheckBox *check = line == ModemLine::Dtr ? modemDtrCheck : modemRtsCheck;
     {
-        const QSignalBlocker blocker(button);
-        button->setChecked(active);
+        const QSignalBlocker blocker(check);
+        check->setChecked(active);
     }
     pollModemLines();
     return true;
@@ -3093,7 +3098,7 @@ void MainWindow::startResetPulse()
     // reset edge both for DTR-coupled boards (Arduino) and for RTS-to-EN
     // auto-reset circuits (ESP32), whatever state the line started in.
     pulseLine = static_cast<ModemLine>(modemPulseLine->currentData().toInt());
-    pulseRestoreActive = (pulseLine == ModemLine::Dtr ? modemDtrButton : modemRtsButton)->isChecked();
+    pulseRestoreActive = (pulseLine == ModemLine::Dtr ? modemDtrCheck : modemRtsCheck)->isChecked();
     if (!setModemOutput(pulseLine, !pulseRestoreActive, false))
         return;
 
@@ -3107,4 +3112,45 @@ void MainWindow::finishResetPulse()
     if (serial->isOpen())
         setModemOutput(pulseLine, pulseRestoreActive, false);
     updateModemControls();
+}
+
+void MainWindow::fitWindowToContent()
+{
+    // Open tall enough to show every sidebar card without scrolling, but never
+    // taller than the screen; there the sidebar scrolls instead.  The height is
+    // computed from the cards rather than fixed, so new controls stay visible.
+    const QScreen *primaryScreen = QGuiApplication::primaryScreen();
+    const int maxHeight = primaryScreen
+        ? qMax(minimumHeight(), primaryScreen->availableGeometry().height() - 24) : height();
+    ensurePolished();
+
+    updateLayoutMetrics();
+    const int target = qMin(maxHeight, roomyWindowHeight);
+    if (target > height())
+        resize(width(), target);
+    updateLayoutMetrics();
+
+    // A few size hints only settle once the window is on screen, so measure
+    // again then: grow to the roomy height if the screen allows, otherwise by
+    // whatever the tightened cards still overflow.
+    QTimer::singleShot(0, this, [this, maxHeight] {
+        updateLayoutMetrics();
+        int target = qMin(maxHeight, roomyWindowHeight);
+        if (target <= height()) {
+            ui->verticalLayout_6->activate();
+            const int overflow = ui->verticalLayout_6->sizeHint().height() - sidebarScroll->viewport()->height();
+            target = qMin(maxHeight, height() + qMax(0, overflow));
+        }
+        if (target > height())
+            resize(width(), target);
+    });
+}
+
+int MainWindow::sidebarChromeHeight() const
+{
+    // Window height around the sidebar cards: menu bar, status bar and the
+    // central layout's top and bottom margins.
+    const QMargins margins = ui->horizontalLayout_4->contentsMargins();
+    return menuBar()->sizeHint().height() + statusBar()->sizeHint().height()
+        + margins.top() + margins.bottom();
 }

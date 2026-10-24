@@ -2,6 +2,7 @@
 
 #include "mainwindow.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QAction>
 #include <QLabel>
@@ -146,12 +147,15 @@ void MainWindowLayoutTest::controlLinesAreIdleWhileDisconnected()
     QVERIFY(connection);
     QVERIFY(controls);
     QVERIFY(connection->isAncestorOf(controls));
-    const QList<QPushButton *> buttons = controls->findChildren<QPushButton *>();
-    QCOMPARE(buttons.size(), 3);
-    for (QPushButton *button : buttons) {
-        QVERIFY2(!button->isEnabled(), qPrintable(button->text() + QStringLiteral(" is usable without a port")));
-        QVERIFY(!button->isChecked());
+    const QList<QCheckBox *> lineChecks = controls->findChildren<QCheckBox *>();
+    QCOMPARE(lineChecks.size(), 2);
+    for (QCheckBox *check : lineChecks) {
+        QVERIFY2(!check->isEnabled(), qPrintable(check->text() + QStringLiteral(" is usable without a port")));
+        QVERIFY(!check->isChecked());
     }
+    const QList<QPushButton *> buttons = controls->findChildren<QPushButton *>();
+    QCOMPARE(buttons.size(), 1);
+    QVERIFY2(!buttons.constFirst()->isEnabled(), "Reset pulse is usable without a port");
 
     // CTS, DSR, CD and RI sit in the status bar, ahead of the RX/TX lights.
     int indicators = 0;
