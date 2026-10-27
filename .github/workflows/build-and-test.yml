@@ -16,15 +16,27 @@ jobs:
       matrix:
         include:
           - qt: Qt 5
-            packages: qtbase5-dev libqt5serialport5-dev
+            packages: qtbase5-dev
+            serialport: libqt5serialport5-dev
           - qt: Qt 6
-            packages: qt6-base-dev libqt6serialport6-dev
+            packages: qt6-base-dev
+            # Ubuntu 26.04 renamed libqt6serialport6-dev to qt6-serialport-dev.
+            serialport: libqt6serialport6-dev qt6-serialport-dev
     steps:
       - uses: actions/checkout@v4
       - name: Install Qt and build tools
         run: |
           sudo apt-get update
-          sudo apt-get install -y cmake ninja-build ${{ matrix.packages }}
+          serialport=""
+          for candidate in ${{ matrix.serialport }}; do
+            # A renamed package can linger as an empty record that apt-cache
+            # still "shows" successfully, so look for a real Package: entry.
+            if apt-cache show "$candidate" 2>/dev/null | grep -q '^Package:'; then
+              serialport="$candidate"
+              break
+            fi
+          done
+          sudo apt-get install -y cmake ninja-build ${{ matrix.packages }} "${serialport:?no Qt SerialPort development package found}"
       - name: Configure
         run: cmake -S . -B build -G Ninja -DBUILD_TESTING=ON
       - name: Build
